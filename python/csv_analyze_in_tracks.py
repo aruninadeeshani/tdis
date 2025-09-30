@@ -23,122 +23,56 @@ def create_histograms():
     hists = {}
     
     # Event and track identification
-    hists['evt'] = Hist(
-        Regular(100, 0, 1000, name="evt", label="Event Number")
-    )
-    hists['trk_id'] = Hist(
-        Regular(50, 0, 50, name="trk_id", label="Track ID")
-    )
+    hists['evt'] = Hist(Regular(100, 0, 1000, name="evt", label="Event Number"))
+    hists['trk_id'] = Hist(Regular(50, 0, 50, name="trk_id", label="Track ID"))
     
     # MC track properties
-    hists['mc_mom'] = Hist(
-        Regular(100, 0, 10, name="mc_mom", label=r"MC Momentum [GeV/c]")
-    )
-    hists['mc_phi'] = Hist(
-        Regular(100, -np.pi, np.pi, name="mc_phi", label=r"MC $\phi$ [rad]")
-    )
-    hists['mc_theta'] = Hist(
-        Regular(100, 0, np.pi, name="mc_theta", label=r"MC $\theta$ [rad]")
-    )
-    hists['mc_vtx_z'] = Hist(
-        Regular(100, -500, 500, name="mc_vtx_z", label="MC Vertex Z [mm]")
-    )
-    hists['mc_hits_count'] = Hist(
-        Regular(50, 0, 50, name="mc_hits_count", label="MC Hits Count")
-    )
+    hists['mc_mom'] = Hist(Regular(100, 0, 10, name="mc_mom", label=r"MC Momentum [GeV/c]"))
+    hists['mc_phi'] = Hist(Regular(100, -np.pi, np.pi, name="mc_phi", label=r"MC $\phi$ [rad]"))
+    hists['mc_theta'] = Hist(Regular(100, 0, np.pi, name="mc_theta", label=r"MC $\theta$ [rad]"))
+    hists['mc_vtx_z'] = Hist(Regular(100, -500, 500, name="mc_vtx_z", label="MC Vertex Z [mm]"))
+    hists['mc_hits_count'] = Hist(Regular(50, 0, 50, name="mc_hits_count", label="MC Hits Count"))
     
     # Track parameters
-    hists['pdg'] = Hist(
-        Regular(100, -3000, 3000, name="pdg", label="PDG Code")
-    )
-    hists['tp_phi'] = Hist(
-        Regular(100, -np.pi, np.pi, name="tp_phi", label=r"Track Param $\phi$ [rad]")
-    )
-    hists['tp_theta'] = Hist(
-        Regular(100, 0, np.pi, name="tp_theta", label=r"Track Param $\theta$ [rad]")
-    )
-    hists['tp_time'] = Hist(
-        Regular(100, -10, 100, name="tp_time", label="Track Time [ns]")
-    )
-    hists['qoverp'] = Hist(
-        Regular(100, -2, 2, name="qoverp", label=r"q/p [c/GeV]")
-    )
+    hists['pdg'] = Hist(Regular(100, -3000, 3000, name="pdg", label="PDG Code"))
+    hists['tp_phi'] = Hist(Regular(100, -np.pi, np.pi, name="tp_phi", label=r"Track Param $\phi$ [rad]"))
+    hists['tp_theta'] = Hist(Regular(100, 0, np.pi, name="tp_theta", label=r"Track Param $\theta$ [rad]"))
+    hists['tp_time'] = Hist(Regular(100, -10, 100, name="tp_time", label="Track Time [ns]"))
+    hists['qoverp'] = Hist(Regular(100, -2, 2, name="qoverp", label=r"q/p [c/GeV]"))
     
     # Surface and location
-    hists['surface'] = Hist(
-        Regular(100, 0, 1e10, name="surface", label="Surface ID")
-    )
-    hists['loc0'] = Hist(
-        Regular(100, -100, 100, name="loc0", label="Local Position 0 [mm]")
-    )
-    hists['loc1'] = Hist(
-        Regular(100, -100, 100, name="loc1", label="Local Position 1 [mm]")
-    )
+    hists['surface'] = Hist(Regular(100, 0, 1e10, name="surface", label="Surface ID"))
+    hists['loc0'] = Hist(Regular(100, -100, 100, name="loc0", label="Local Position 0 [mm]"))
+    hists['loc1'] = Hist(Regular(100, -100, 100, name="loc1", label="Local Position 1 [mm]"))
     
     # Covariance matrix elements (log scale might be better for these)
-    hists['cov_loc0'] = Hist(
-        Regular(100, 0, 10, name="cov_loc0", label=r"Cov(loc0,loc0) [mm$^2$]")
-    )
-    hists['cov_loc1'] = Hist(
-        Regular(100, 0, 10, name="cov_loc1", label=r"Cov(loc1,loc1) [mm$^2$]")
-    )
-    hists['cov_phi'] = Hist(
-        Regular(100, 0, 0.1, name="cov_phi", label=r"Cov($\phi$,$\phi$) [rad$^2$]")
-    )
-    hists['cov_theta'] = Hist(
-        Regular(100, 0, 0.1, name="cov_theta", label=r"Cov($\theta$,$\theta$) [rad$^2$]")
-    )
-    hists['cov_qoverp'] = Hist(
-        Regular(100, 0, 0.5, name="cov_qoverp", label=r"Cov(q/p,q/p) [(c/GeV)$^2$]")
-    )
-    hists['cov_time'] = Hist(
-        Regular(100, 0, 1e8, name="cov_time", label=r"Cov(time,time) [ns$^2$]")
-    )
+    hists['cov_loc0'] = Hist(Regular(100, 0, 10, name="cov_loc0", label=r"Cov(loc0,loc0) [mm$^2$]"))
+    hists['cov_loc1'] = Hist(Regular(100, 0, 10, name="cov_loc1", label=r"Cov(loc1,loc1) [mm$^2$]"))
+    hists['cov_phi'] = Hist(Regular(100, 0, 0.1, name="cov_phi", label=r"Cov($\phi$,$\phi$) [rad$^2$]"))
+    hists['cov_theta'] = Hist(Regular(100, 0, 0.1, name="cov_theta", label=r"Cov($\theta$,$\theta$) [rad$^2$]"))
+    hists['cov_qoverp'] = Hist(Regular(100, 0, 0.5, name="cov_qoverp", label=r"Cov(q/p,q/p) [(c/GeV)$^2$]"))
+    hists['cov_time'] = Hist(Regular(100, 0, 1e8, name="cov_time", label=r"Cov(time,time) [ns$^2$]"))
     
     # Perigee coordinates
-    hists['perigee_x'] = Hist(
-        Regular(100, -50, 50, name="perigee_x", label="Perigee X [mm]")
-    )
-    hists['perigee_y'] = Hist(
-        Regular(100, -50, 50, name="perigee_y", label="Perigee Y [mm]")
-    )
-    hists['perigee_z'] = Hist(
-        Regular(100, -500, 500, name="perigee_z", label="Perigee Z [mm]")
-    )
+    hists['perigee_x'] = Hist(Regular(100, -50, 50, name="perigee_x", label="Perigee X [mm]"))
+    hists['perigee_y'] = Hist(Regular(100, -50, 50, name="perigee_y", label="Perigee Y [mm]"))
+    hists['perigee_z'] = Hist(Regular(100, -500, 500, name="perigee_z", label="Perigee Z [mm]"))
     
     # First hit properties
-    hists['fhit_id'] = Hist(
-        Regular(100, 0, 1000, name="fhit_id", label="First Hit ID")
-    )
-    hists['fhit_time'] = Hist(
-        Regular(100, 0, 100, name="fhit_time", label="First Hit Time [ns]")
-    )
-    hists['fhit_plane'] = Hist(
-        Regular(20, 0, 20, name="fhit_plane", label="First Hit Plane")
-    )
-    hists['fhit_ring'] = Hist(
-        Regular(20, 0, 20, name="fhit_ring", label="First Hit Ring")
-    )
-    hists['fhit_pad'] = Hist(
-        Regular(100, 0, 200, name="fhit_pad", label="First Hit Pad")
-    )
-    hists['fhit_ztogem'] = Hist(
-        Regular(100, -50, 50, name="fhit_ztogem", label="First Hit Z to GEM [mm]")
-    )
-    hists['fhit_true_x'] = Hist(
-        Regular(100, -500, 500, name="fhit_true_x", label="First Hit True X [mm]")
-    )
-    hists['fhit_true_y'] = Hist(
-        Regular(100, -500, 500, name="fhit_true_y", label="First Hit True Y [mm]")
-    )
-    hists['fhit_true_z'] = Hist(
-        Regular(100, -2000, 2000, name="fhit_true_z", label="First Hit True Z [mm]")
-    )
+    hists['fhit_id'] = Hist(Regular(100, 0, 1000, name="fhit_id", label="First Hit ID"))
+    hists['fhit_time'] = Hist(Regular(100, 0, 100, name="fhit_time", label="First Hit Time [ns]"))
+    hists['fhit_plane'] = Hist(Regular(20, 0, 20, name="fhit_plane", label="First Hit Plane"))
+    hists['fhit_ring'] = Hist(Regular(20, 0, 20, name="fhit_ring", label="First Hit Ring"))
+    hists['fhit_pad'] = Hist(Regular(100, 0, 200, name="fhit_pad", label="First Hit Pad"))
+    hists['fhit_ztogem'] = Hist(Regular(100, -50, 50, name="fhit_ztogem", label="First Hit Z to GEM [mm]"))
+    hists['fhit_true_x'] = Hist(Regular(100, -500, 500, name="fhit_true_x", label="First Hit True X [mm]"))
+    hists['fhit_true_y'] = Hist(Regular(100, -500, 500, name="fhit_true_y", label="First Hit True Y [mm]"))
+    hists['fhit_true_z'] = Hist(Regular(100, -2000, 2000, name="fhit_true_z", label="First Hit True Z [mm]"))
     
     return hists
 
 
-def fill_histograms(df, hists):
+def auto_fill_histograms(df, hists):
     """Fill histograms with data from dataframe"""
     filled_hists = {}
     
@@ -320,7 +254,7 @@ def main():
     
     # Fill histograms with data
     print("Filling histograms with data...")
-    filled_hists = fill_histograms(df, hists)
+    filled_hists = auto_fill_histograms(df, hists)
     
     # Plot all histograms
     print(f"Plotting {len(filled_hists)} histograms...")
