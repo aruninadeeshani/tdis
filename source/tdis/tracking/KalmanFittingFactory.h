@@ -18,7 +18,6 @@
 #include <ActsExamples/EventData/Track.hpp>
 
 #include "ActsGeometryService.h"
-#include "TrackingTypes.h"
 #include "podio_model/DigitizedMtpcMcHitCollection.h"
 #include "podio_model/DigitizedMtpcMcTrack.h"
 #include "podio_model/DigitizedMtpcMcTrackCollection.h"

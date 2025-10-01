@@ -50,6 +50,7 @@
 #include <thread>
 #include <vector>
 
+#include "PadGeometryHelper.hpp"
 #include "podio_model/DigitizedMtpcMcHitCollection.h"
 #include "podio_model/DigitizedMtpcMcTrackCollection.h"
 #include "podio_model/EventInfoCollection.h"
@@ -366,6 +367,11 @@ namespace tdis::io {
             podioHit.setPad(    hit.pad   );
             podioHit.setPlane(  hit.plane );
             podioHit.setZToGem( hit.zToGem  * Acts::UnitConstants::m);
+
+            // Calculate
+            auto [padX, padY] = getPadCenter(hit.ring, hit.pad);
+            podioHit.setPadCenterX(padX);
+            podioHit.setPadCenterY(padY);
 
             tdis::Vector3f true_pos = tdis::Vector3f{
                 static_cast<float>(hit.true_x * Acts::UnitConstants::m),
