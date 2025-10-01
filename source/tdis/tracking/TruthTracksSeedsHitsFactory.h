@@ -6,7 +6,8 @@
 #include <optional>
 #include <random>
 
-#include "ActsGeometryService.h"
+#include "geometry/ActsGeometryService.h"
+#include "geometry/TGeoGeometryService.h"
 #include "podio_model/DigitizedMtpcMcHit.h"
 #include "podio_model/DigitizedMtpcMcTrack.h"
 #include "podio_model/Measurement2D.h"

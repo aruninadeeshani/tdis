@@ -13,7 +13,7 @@
 #include <memory>
 #include <mutex>
 
-#include "../tracking/MtpcDetectorElement.h"
+#include "geometry/MtpcDetectorElement.h"
 #include "logging/LogService.hpp"
 
 namespace tdis::tracking {

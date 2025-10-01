@@ -41,7 +41,7 @@ namespace tdis {
 
         // Validate inputs
         if (ring < 0 || ring >= num_rings) {
-            throw std::invalid_argument("Ring index must be between 0 and " + std::to_string(num_rings - 1));
+            throw std::invalid_argument("getRingCenterRadius: Ring index must be between 0 and " + std::to_string(num_rings - 1));
         }
 
         // Compute radial center of the ring
@@ -63,10 +63,10 @@ namespace tdis {
 
         // Validate inputs
         if (ring < 0 || ring >= num_rings) {
-            throw std::invalid_argument("Ring index must be between 0 and " + std::to_string(num_rings - 1));
+            throw std::invalid_argument("getPadCenter: Ring index must be between 0 and " + std::to_string(num_rings - 1));
         }
         if (pad < 0 || pad >= num_pads_per_ring) {
-            throw std::invalid_argument("Pad index must be between 0 and " + std::to_string(num_pads_per_ring - 1));
+            throw std::invalid_argument("getPadCenter: Pad index must be between 0 and " + std::to_string(num_pads_per_ring - 1));
         }
 
         // Compute radial center of the ring
@@ -92,6 +92,21 @@ namespace tdis {
         double y = r_center * std::sin(theta_center);
 
         return { x, y };
+    }
+
+    constexpr std::vector<double> getPlanePositions() {
+        std::vector<double> positions;
+        positions.emplace_back(-24.9935);
+        positions.emplace_back(-15.0065);
+        positions.emplace_back(-14.9935);
+        positions.emplace_back( -5.0065);
+        positions.emplace_back( -4.9935);
+        positions.emplace_back(  4.9935);
+        positions.emplace_back(  5.0065);
+        positions.emplace_back( 14.9935);
+        positions.emplace_back( 15.0065);
+        positions.emplace_back( 24.9935);
+        return positions;
     }
 
 }

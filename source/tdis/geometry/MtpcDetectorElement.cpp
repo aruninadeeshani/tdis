@@ -1,4 +1,4 @@
-#include "../tracking/MtpcDetectorElement.h"
+#include "MtpcDetectorElement.h"
 
 #include <Acts/Definitions/Algebra.hpp>
 #include <Acts/Geometry/GeometryContext.hpp>

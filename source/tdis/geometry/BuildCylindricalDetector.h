@@ -12,7 +12,7 @@
 
 #include <memory>
 
-#include "../tracking/MtpcDetectorElement.h"
+#include "geometry/MtpcDetectorElement.h"
 
 namespace Acts {
 class TrackingGeometry;

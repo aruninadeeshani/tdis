@@ -59,7 +59,7 @@
 #include <thread>
 #include <vector>
 
-#include "logger/LogService.hpp"
+#include "logging/LogService.hpp"
 #include "podio_model/Track.h"
 #include "podio_model/TrackCollection.h"
 #include "podio_model/TrackerHit.h"
@@ -136,11 +136,11 @@ inline void PodioWriteProcessor::Process(const std::shared_ptr<const JEvent>& ev
 
     [[maybe_unused]] auto tracks = event->GetCollection<tdis::Track>("FittedTracks");
 
-    m_log->info("PodioWriteProcessor::Process() All event collections:");
+    m_log->debug("PodioWriteProcessor::Process() All event collections:");
     auto event_collections = event->GetAllCollectionNames();
     for (const auto& coll_name : event_collections) {
         try {
-            m_log->info("   {}", coll_name);
+            m_log->debug("   {}", coll_name);
         } catch (std::exception& e) {
             // chomp
         }
@@ -252,9 +252,12 @@ inline void PodioWriteProcessor::Process(const std::shared_ptr<const JEvent>& ev
     m_writer->writeFrame(*frame, "events", m_collections_to_write);
 
     auto [missing_names, all_names] = m_writer->checkConsistency(m_collections_to_write, "");
-    m_log->info("PODIO checkConsistency missing_names: {}", missing_names.size());
-    for (const auto& coll_name : missing_names) {
-        m_log->info("   {}", coll_name);
+
+    if (!missing_names.empty()) {
+        m_log->warn("PODIO checkConsistency missing_names: {}", missing_names.size());
+        for (const auto& coll_name : missing_names) {
+            m_log->info("   {}", coll_name);
+        }
     }
     m_is_first_event = false;
 }

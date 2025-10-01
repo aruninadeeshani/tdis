@@ -16,7 +16,7 @@
 #include <vector>
 
 #include "Acts/Definitions/Units.hpp"
-#include "logger/LogService.hpp"
+#include "logging/LogService.hpp"
 #include "podio_model/Measurement2D.h"
 #include "podio_model/Track.h"
 #include "podio_model/TrackCollection.h"
@@ -241,7 +241,7 @@ public:
 
         // Process track seeds (input)
         auto& seeds = *m_in_trackSeeds();
-        m_log->info("Processing event {} with {} seeds", eventNumber, seeds.size());
+        m_log->debug("Processing event {} with {} seeds", eventNumber, seeds.size());
 
         for (auto trueSeed: seeds) {
             auto mcTrack = trueSeed.getMcTrack();
@@ -266,7 +266,7 @@ public:
             auto& trajectories = *m_in_trajectories();
             auto& trackParameters = *m_in_trackParameters();
 
-            m_log->info("Processing {} fitted tracks", tracks.size());
+            m_log->debug("Processing {} fitted tracks", tracks.size());
 
             for (auto track : tracks) {
                 writeFittedTrack(eventNumber, track, seeds);

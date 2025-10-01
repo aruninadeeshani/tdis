@@ -1,13 +1,14 @@
-// Copyright 2022, David Lawrence
-// Subject to the terms in the LICENSE file found in the top-level directory.
-//
-//
-
-#include "../tracking/ActsGeometryService.h"
-
 #include <JANA/JException.h>
 #include <TGeoManager.h>
 #include <TGeoTube.h>
+#include <iostream>
+#include <string>
+#include "TGeoManager.h"
+#include "TGeoNode.h"
+#include "TGeoVolume.h"
+#include "TGeoShape.h"
+#include "TGeoMatrix.h"
+
 #include <extensions/spdlog/SpdlogToActs.h>
 #include <fmt/ostream.h>
 
@@ -23,25 +24,10 @@
 #include <string>
 #include <string_view>
 
-#include "../tracking/BuildCylindricalDetector.h"
+#include "TGeoGeometryService.h"
+#include "BuildCylindricalDetector.h"
 #include "logging/LogService.hpp"
 
-// Formatter for Eigen matrices
-#if FMT_VERSION >= 90000
-#    include <Eigen/Core>
-
-namespace Acts {
-    class JsonMaterialDecorator;
-}
-template <typename T>
-struct fmt::formatter<
-    T,
-    std::enable_if_t<
-        std::is_base_of_v<Eigen::MatrixBase<T>, T>,
-        char
-    >
-> : fmt::ostream_formatter {};
-#endif // FMT_VERSION >= 90000
 
 
 namespace {
@@ -111,13 +97,6 @@ namespace {
     }
 
 
-#include <iostream>
-#include <string>
-#include "TGeoManager.h"
-#include "TGeoNode.h"
-#include "TGeoVolume.h"
-#include "TGeoShape.h"
-#include "TGeoMatrix.h"
 
     // Recursive function to find the node and compute its global matrix
     bool findNodeGlobalMatrix(TGeoNode* currentNode, TGeoNode* targetNode, TGeoHMatrix& globalMatrix) {
@@ -254,11 +233,11 @@ namespace {
 }
 
 
-void tdis::tracking::ActsGeometryService::Init() {
+void tdis::tracking::TGeoGeometryService::Init() {
 
-    m_log = m_svc_log->logger("ActsGeometryService");
+    m_log = m_service_log->logger("TGeoGeometryService");
 
-    m_log->debug("ActsGeometryService is initializing...");
+    m_log->debug("TGeoGeometryService is initializing...");
 
     m_log->debug("Set TGeoManager and acts_init_log_level log levels");
     // Turn off TGeo printouts if appropriate for the msg level
@@ -272,67 +251,75 @@ void tdis::tracking::ActsGeometryService::Init() {
     auto was_ticker_enabled = m_app->IsTickerEnabled();
     m_app->SetTicker(false);
 
+    // Convert DD4hep geometry to ACTS
+    m_log->info("Converting TGeo geometry to ACTS...");
+    auto logger = tdis::makeActsLogger("CONV", m_log);
 
-    // Set ACTS logging level
-    auto acts_init_log_level = tdis::SpdlogToActsLevel(m_log->level());
+    m_log->info("Loading geometry file: ");
+    m_log->info("   '{}'", m_tgeo_file());
 
-    // Load ACTS materials maps
-    std::shared_ptr<const Acts::IMaterialDecorator> materialDeco{nullptr};
-    if (!m_material_map_file().empty()) {
-        m_log->info("loading materials map from file: '{}'", m_material_map_file());
-        // Set up the converter first
-        Acts::MaterialMapJsonConverter::Config jsonGeoConvConfig;
-        // Set up the json-based decorator
-        try {
-            materialDeco = std::make_shared<const Acts::JsonMaterialDecorator>(jsonGeoConvConfig, m_material_map_file(), acts_init_log_level);
+    m_tgeo_manager = TGeoManager::Import(m_tgeo_file().c_str());
+    if(!m_tgeo_manager) {
+        m_log->error("Failed to load GeometryFile: TGeoManager::Import returned NULL");
+        exit(1);    // TODO this is due to JANA2 issue #381. Remove after is fixed
+    }
+
+    if(!m_tgeo_manager->GetTopNode()) {
+        m_log->error("Failed to load GeometryFile: TGeoManager::GetTopNode returned NULL");
+        exit(1);    // TODO this is due to JANA2 issue #381. Remove after is fixed
+    }
+
+    if(!m_tgeo_manager->GetTopVolume()) {
+        m_log->error("Failed to load GeometryFile: TGeoManager::GetTopVolume returned NULL");
+        exit(1);    // TODO this is due to JANA2 issue #381. Remove after is fixed
+    }
+
+    if (m_log->level() <= (int) spdlog::level::debug) {
+        printNodeTree(m_tgeo_manager->GetTopNode(), /*printVolumes*/ false);
+    }
+
+    std::vector<TGeoNode*> disk_nodes;
+    findNodesWithPrefix(m_tgeo_manager->GetTopNode(), "mTPCReadoutDisc", disk_nodes);
+
+    m_plane_positions.clear();
+    std::vector<double> stereos;
+    std::array<double, 2> offsets{{0, 0}};
+    std::array<double, 2> bounds{{25, 100}};
+    double thickness{0.1};
+
+    m_log->info("Found readout disks: {}", disk_nodes.size());
+    for (auto node : disk_nodes) {
+
+        auto [x,y,z] = getGlobalPosition(node);
+        // Get the volume and shape associated with the node
+        TGeoVolume* volume = node->GetVolume();
+        TGeoShape* shape = volume->GetShape();
+        std::string shapeType = shape->ClassName();
+
+        // Check it is TGeoTube as expected
+        if (shapeType != "TGeoTube") {
+            m_log->warn("For TGeoNode('{}') TGeoVolume ('{}') the shape not a TGeoTube as expected but: ", node->GetName(), volume->GetName(), shapeType);
+            m_log->warn("We consider this as recoverable, but it might be if all readout disks are defined with other shape or something. Check this!");
+            continue;
         }
-        catch (const std::exception& e) {
-            m_log->error("Failed to load materials map: {}", e.what());
-            exit(1);    // TODO this is due to JANA2 issue #381. Remove after is fixed
-        }
-    }
-    else {
-        m_log->info("No material map file. Skipping material map");
-    }
 
-    m_log->info("Building ACTS Geometry");
+        auto* tube = dynamic_cast<TGeoTube*>(shape);
+        double r_min = tube->GetRmin();
+        double r_max = tube->GetRmax();
+        double dz = tube->GetDz();
 
-    m_detector_cylinders.clear();
+        // We just copy it, considering the disks are the same
+        bounds[0] = r_min * Acts::UnitConstants::cm;
+        bounds[1] = r_max * Acts::UnitConstants::cm;
+        thickness = dz * Acts::UnitConstants::cm * 0.001;
 
-    gGeometry = tdis::tracking::buildCylindricalDetector(
-        m_log,
-        nominalContext,             // Geometry context
-        m_detector_cylinders     // Detector element store
-    );
+        m_log->info(fmt::format("   Position: ({:.4f}, {:.4f}, {:>8.4f}) cm, rmin: {:.3f} cm, rmax: {:.3f} cm, dz: {:.4f} cm, Node: '{}', Volume: '{}'",
+                            x, y, z, r_min, r_max, dz, node->GetName(), volume->GetName()));
 
-
-    // Visualize ACTS geometry
-    const Acts::TrackingVolume& tgVolume = *(gGeometry->highestTrackingVolume());
-
-    // OBJ visualization export
-    auto obj_file = m_obj_output_file();
-    if(!m_obj_output_file().empty()) {
-        m_log->info("ACTS exporting to OBJ: {}", m_obj_output_file());
-        Acts::ObjVisualization3D vis_helper;
-        DrawTrackingGeometry(vis_helper, tgVolume, m_geometry_context);
-        vis_helper.write(m_obj_output_file());
-    } else {
-        m_log->info("ACTS OBJ Export. Flag '{}' is empty. NOT exporting.", m_obj_output_file.m_name);
+        m_plane_positions.push_back(z * Acts::UnitConstants::cm);
+        stereos.push_back(0);
     }
 
-    // PLY visualization export
-    if(!m_ply_output_file().empty()) {
-        m_log->info("ACTS exporting to PLY: {}", m_ply_output_file());
-        Acts::PlyVisualization3D vis_helper;
-        DrawTrackingGeometry(vis_helper, tgVolume, m_geometry_context);
-        vis_helper.write(m_ply_output_file());
-    } else {
-        m_log->info("ACTS PLY Export. Flag '{}' is empty. NOT exporting.", m_ply_output_file.m_name);
-    }
-
-    // Set ticker back
-    m_app->SetTicker(was_ticker_enabled);
-
-    m_init_log->info("ActsGeometryService initialization complete");
+    m_log->info("TGeoGeometryService initialization complete");
 }
 

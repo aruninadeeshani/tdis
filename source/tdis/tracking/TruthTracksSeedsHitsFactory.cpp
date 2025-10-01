@@ -1,3 +1,5 @@
+#include "TruthTracksSeedsHitsFactory.h"
+
 #include <podio_model/DigitizedMtpcMcTrack.h>
 #include <podio_model/DigitizedMtpcMcTrackCollection.h>
 
@@ -5,8 +7,7 @@
 #include <Acts/Surfaces/CylinderBounds.hpp>
 #include <Acts/Surfaces/PerigeeSurface.hpp>
 
-#include "PadGeometryHelper.hpp"
-#include "TruthTracksSeedsHitsFactory.h"
+#include "geometry/TdisGeometryHelper.hpp"
 #include "podio_model/Measurement2DCollection.h"
 #include "podio_model/TrackParametersCollection.h"
 #include "podio_model/TrackSeedCollection.h"
@@ -262,7 +263,7 @@ namespace tdis::tracking {
     void TruthTracksSeedsHitsFactory::Execute(int32_t /*run_nr*/, uint64_t event_index) {
         namespace ActsUnits = Acts::UnitConstants;
 
-        auto plane_positions = m_service_geometry->GetPlanePositions();
+        const auto planePositions = getPlanePositions();
 
         m_log->trace("TruthTrackSeedFactory, processing event: {}", event_index);
 
@@ -284,8 +285,7 @@ namespace tdis::tracking {
 
             int plane_idx = 0;
             for (const auto& mcHit : mc_track.getHits()) {
-                auto [hit_opt, meas_opt] = createHitAndMeasurement(
-                    mcHit, plane_idx++, event_index, plane_positions);
+                auto [hit_opt, meas_opt] = createHitAndMeasurement(mcHit, plane_idx++, event_index, planePositions);
                 
                 if (hit_opt.has_value() && meas_opt.has_value()) {
                     trackHits.push_back(hit_opt.value());

@@ -48,29 +48,32 @@ target_include_directories(podio_model_dict PRIVATE "podio_model")
 # --------- CREATE TDIS EXECUTABLE ----------------
 add_executable(tdis
         main.cpp
-        logger/LogService.hpp
-        PadGeometryHelper.hpp
+
+        logging/LogService.hpp
 
         io/DigitizedDataEventSource.hpp
         io/PodioWriteProcessor.hpp
         io/CsvWriteProcessor.hpp
 
-        tracking/ActsGeometryService.cc
-        tracking/ActsGeometryService.h
-        tracking/ReconstructedHitFactory.h
+        geometry/PadGeometryHelper.hpp
 
-        tracking/BuildCylindricalDetector.h
-        tracking/BuildCylindricalDetector.cpp
+        geometry/ActsGeometryService.cpp
+        geometry/ActsGeometryService.h
 
-        tracking/MtpcDetectorElement.cpp
-        tracking/MtpcDetectorElement.hpp
+        geometry/TGeoGeometryService.cpp
+        geometry/TGeoGeometryService.h
+
+        geometry/BuildCylindricalDetector.h
+        geometry/BuildCylindricalDetector.cpp
+
+        geometry/MtpcDetectorElement.cpp
+        geometry/MtpcDetectorElement.h
 
         tracking/TruthTracksSeedsHitsFactory.h
         tracking/TruthTracksSeedsHitsFactory.cpp
 
         tracking/KalmanFittingFactory.h
         tracking/KalmanFittingFactory.cpp
-        tracking/PodioSurfaceIdConverter.h
 )
 
 # ---------- FIND REQUIRED PACKAGES -------------

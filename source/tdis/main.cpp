@@ -9,11 +9,12 @@
 #include <utility>
 
 #include "CLI/CLI.hpp"
+#include "geometry/ActsGeometryService.h"
+#include "geometry/TGeoGeometryService.h"
 #include "io/CsvWriteProcessor.hpp"
 #include "io/DigitizedDataEventSource.hpp"
 #include "io/PodioWriteProcessor.hpp"
-#include "logger/LogService.hpp"
-#include "tracking/ActsGeometryService.h"
+#include "logging/LogService.hpp"
 #include "tracking/KalmanFittingFactory.h"
 #include "tracking/TruthTracksSeedsHitsFactory.h"
 
@@ -114,6 +115,9 @@ int main(int argc, char* argv[]) {
     app.ProvideService(std::make_shared<tdis::services::LogService>(&app));
     app.ProvideService(std::make_shared<tdis::tracking::ActsGeometryService>());
 
+    // (!) We are not using TGeometry at all right now. Enable if needed
+    // app.ProvideService(std::make_shared<tdis::tracking::TGeoGeometryService>());
+
     auto truthTrackInitGenerator = new JOmniFactoryGeneratorT<tdis::tracking::TruthTracksSeedsHitsFactory>();
     truthTrackInitGenerator->AddWiring(
         "TruthTracksSeedsHitsFactory",
@@ -152,6 +156,5 @@ int main(int argc, char* argv[]) {
 
     app.Run();
 
-    //verify_clusters_file();
     return 0;
 }

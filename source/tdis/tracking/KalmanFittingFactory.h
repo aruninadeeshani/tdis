@@ -17,8 +17,8 @@
 #include <ActsExamples/EventData/Measurement.hpp>
 #include <ActsExamples/EventData/Track.hpp>
 
-#include "ActsGeometryService.h"
-#include "logger/LogService.hpp"
+#include "geometry/ActsGeometryService.h"
+#include "logging/LogService.hpp"
 #include "podio_model/DigitizedMtpcMcHitCollection.h"
 #include "podio_model/DigitizedMtpcMcTrack.h"
 #include "podio_model/DigitizedMtpcMcTrackCollection.h"

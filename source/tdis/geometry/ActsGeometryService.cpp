@@ -3,6 +3,8 @@
 //
 //
 
+#include "ActsGeometryService.h"
+
 #include <JANA/JException.h>
 #include <TGeoManager.h>
 #include <TGeoTube.h>
@@ -21,9 +23,8 @@
 #include <string>
 #include <string_view>
 
-#include "ActsGeometryService.h"
-#include "BuildCylindricalDetector.h"
-#include "services/LogService.hpp"
+#include "geometry/BuildCylindricalDetector.h"
+#include "logging/LogService.hpp"
 
 // Formatter for Eigen matrices
 #if FMT_VERSION >= 90000
@@ -255,12 +256,11 @@ namespace {
 
 void tdis::tracking::ActsGeometryService::Init() {
 
-    m_log = m_svc_log->logger("acts");
-    m_init_log = m_svc_log->logger("acts_init");
+    m_log = m_svc_log->logger("ActsGeometryService");
 
-    m_init_log->debug("ActsGeometryService is initializing...");
+    m_log->debug("ActsGeometryService is initializing...");
 
-    m_init_log->debug("Set TGeoManager and acts_init_log_level log levels");
+    m_log->debug("Set TGeoManager and acts_init_log_level log levels");
     // Turn off TGeo printouts if appropriate for the msg level
     if (m_log->level() >= (int) spdlog::level::info) {
         TGeoManager::SetVerboseLevel(0);
@@ -274,12 +274,12 @@ void tdis::tracking::ActsGeometryService::Init() {
 
 
     // Set ACTS logging level
-    auto acts_init_log_level = tdis::SpdlogToActsLevel(m_init_log->level());
+    auto acts_init_log_level = tdis::SpdlogToActsLevel(m_log->level());
 
     // Load ACTS materials maps
     std::shared_ptr<const Acts::IMaterialDecorator> materialDeco{nullptr};
     if (!m_material_map_file().empty()) {
-        m_init_log->info("loading materials map from file: '{}'", m_material_map_file());
+        m_log->info("loading materials map from file: '{}'", m_material_map_file());
         // Set up the converter first
         Acts::MaterialMapJsonConverter::Config jsonGeoConvConfig;
         // Set up the json-based decorator
@@ -287,98 +287,20 @@ void tdis::tracking::ActsGeometryService::Init() {
             materialDeco = std::make_shared<const Acts::JsonMaterialDecorator>(jsonGeoConvConfig, m_material_map_file(), acts_init_log_level);
         }
         catch (const std::exception& e) {
-            m_init_log->error("Failed to load materials map: {}", e.what());
+            m_log->error("Failed to load materials map: {}", e.what());
             exit(1);    // TODO this is due to JANA2 issue #381. Remove after is fixed
         }
     }
-
-    // Convert DD4hep geometry to ACTS
-    m_init_log->info("Converting TGeo geometry to ACTS...");
-    auto logger = tdis::makeActsLogger("CONV", m_log);
-
-    m_log->info("Loading geometry file: ");
-    m_log->info("   '{}'", m_tgeo_file());
-
-    m_tgeo_manager = TGeoManager::Import(m_tgeo_file().c_str());
-    if(!m_tgeo_manager) {
-        m_init_log->error("Failed to load GeometryFile: TGeoManager::Import returned NULL");
-        exit(1);    // TODO this is due to JANA2 issue #381. Remove after is fixed
+    else {
+        m_log->info("No material map file. Skipping material map");
     }
 
-    if(!m_tgeo_manager->GetTopNode()) {
-        m_init_log->error("Failed to load GeometryFile: TGeoManager::GetTopNode returned NULL");
-        exit(1);    // TODO this is due to JANA2 issue #381. Remove after is fixed
-    }
-
-    if(!m_tgeo_manager->GetTopVolume()) {
-        m_init_log->error("Failed to load GeometryFile: TGeoManager::GetTopVolume returned NULL");
-        exit(1);    // TODO this is due to JANA2 issue #381. Remove after is fixed
-    }
-
-    if (m_log->level() <= (int) spdlog::level::debug) {
-        printNodeTree(m_tgeo_manager->GetTopNode(), /*printVolumes*/ false);
-    }
-
-    std::vector<TGeoNode*> disk_nodes;
-    findNodesWithPrefix(m_tgeo_manager->GetTopNode(), "mTPCReadoutDisc", disk_nodes);
-
-    m_plane_positions.clear();
-    std::vector<double> stereos;
-    std::array<double, 2> offsets{{0, 0}};
-    std::array<double, 2> bounds{{25, 100}};
-    double thickness{0.1};
-
-    m_init_log->info("Found readout disks: {}", disk_nodes.size());
-    for (auto node : disk_nodes) {
-
-        auto [x,y,z] = getGlobalPosition(node);
-        // Get the volume and shape associated with the node
-        TGeoVolume* volume = node->GetVolume();
-        TGeoShape* shape = volume->GetShape();
-        std::string shapeType = shape->ClassName();
-
-        // Check it is TGeoTube as expected
-        if (shapeType != "TGeoTube") {
-            m_init_log->warn("For TGeoNode('{}') TGeoVolume ('{}') the shape not a TGeoTube as expected but: ", node->GetName(), volume->GetName(), shapeType);
-            m_init_log->warn("We consider this as recoverable, but it might be if all readout disks are defined with other shape or something. Check this!");
-            continue;
-        }
-
-        auto* tube = dynamic_cast<TGeoTube*>(shape);
-        double r_min = tube->GetRmin();
-        double r_max = tube->GetRmax();
-        double dz = tube->GetDz();
-
-        // We just copy it, considering the disks are the same
-        bounds[0] = r_min * Acts::UnitConstants::cm;
-        bounds[1] = r_max * Acts::UnitConstants::cm;
-        thickness = dz * Acts::UnitConstants::cm * 0.001;
-
-        m_log->info(fmt::format("   Position: ({:.4f}, {:.4f}, {:>8.4f}) cm, rmin: {:.3f} cm, rmax: {:.3f} cm, dz: {:.4f} cm, Node: '{}', Volume: '{}'",
-                            x, y, z, r_min, r_max, dz, node->GetName(), volume->GetName()));
-
-        m_plane_positions.push_back(z * Acts::UnitConstants::cm);
-        stereos.push_back(0);
-    }
-
-    m_init_log->info("Building ACTS Geometry");
-
-    /// Return the telescope detector
-    // TODO remove it. This is from the old implementation
-    // gGeometry = tdis::tracking::buildCylindricalDetector(
-    //         nominalContext,             // gctx is the detector element dependent geometry context
-    //         m_detector_elements,        // detectorStore is the store for the detector element
-    //         m_plane_positions,          // positions are the positions of different layers in the longitudinal direction
-    //         stereos,                    // stereoAngles are the stereo angles of different layers, which are rotation angles around the longitudinal (normal) direction
-    //         offsets,                    // is the offset (u, v) of the layers in the transverse plane
-    //         bounds,                     // bounds is the surface bound values, minR and maxR
-    //         thickness,                  // thickness is the material thickness of each layer
-    //         Acts::BinningValue::binZ);
+    m_log->info("Building ACTS Geometry");
 
     m_detector_cylinders.clear();
 
     gGeometry = tdis::tracking::buildCylindricalDetector(
-        m_init_log,
+        m_log,
         nominalContext,             // Geometry context
         m_detector_cylinders     // Detector element store
     );
@@ -411,6 +333,6 @@ void tdis::tracking::ActsGeometryService::Init() {
     // Set ticker back
     m_app->SetTicker(was_ticker_enabled);
 
-    m_init_log->info("ActsGeometryService initialization complete");
+    m_log->info("ActsGeometryService initialization complete");
 }
 
