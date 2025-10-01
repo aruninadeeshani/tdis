@@ -82,7 +82,7 @@ public:
         "TrackerHits",
         "Measurements2D",
 
-        "FittedTrajectories", "FittedTrackParams", "FittedTracks"
+        "FittedTrajectories", "FittedTrackParameters", "FittedTracks"
     };
 
   PodioWriteProcessor(JApplication * app);

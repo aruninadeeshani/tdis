@@ -134,7 +134,7 @@ int main(int argc, char* argv[]) {
     kalmanFitterGenerator->AddWiring(
         "KalmanFitterGenerator",
         {"TruthTrackSeeds" },
-        {"FittedTrajectories", "FittedTrackParams", "FittedTracks"});
+        {"FittedTrajectories", "FittedTrackParameters", "FittedTracks"});
     app.Add(kalmanFitterGenerator);
 
 

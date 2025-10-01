@@ -432,7 +432,11 @@ void KalmanFittingFactory::processTrack(tdis::TrackSeed trackSeed) {
     // Create TrackParameters object (at the track tip/end)
     auto trackParams = m_out_track_params()->create();
     trackParams.setType(0); // Type 0 = track head/tip
-    trackParams.setSurface(trackProxy.referenceSurface().geometryId().value());
+    if (trackProxy.hasReferenceSurface()) {
+        trackParams.setSurface(trackProxy.referenceSurface().geometryId().value());
+    }
+
+
 
     // Set track parameters - note the direct access to avoid the absoluteMomentum() issue
     trackParams.setLoc({
