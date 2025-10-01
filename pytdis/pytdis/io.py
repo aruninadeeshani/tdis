@@ -92,7 +92,7 @@ def _read_events_iterator(filename: str,
         List of hit arrays for this track
     """
     with open(filename, 'r') as f:
-        event_count = 0
+        event_index = -1
         track_id = 0
         current_event_lines = []
         in_event = False
@@ -102,24 +102,24 @@ def _read_events_iterator(filename: str,
             if line.strip().startswith("Event"):
                 # Process previous event if exists
                 if in_event and current_event_lines:
-                    if event_count >= skip_events:
+                    if event_index >= skip_events:
                         try:
-                            track_info, hits = parse_event_data(current_event_lines, event_count)
+                            track_info, hits = parse_event_data(current_event_lines, event_index)
                             yield track_id, track_info, hits
                             track_id += 1
                         except ValueError as e:
                             print(f"Warning: {e}")
 
-                event_count += 1
+                event_index += 1
                 current_event_lines = []
                 in_event = True
             elif in_event and line.strip():
                 current_event_lines.append(line)
 
         # Process last event if exists
-        if in_event and current_event_lines and event_count >= skip_events:
+        if in_event and current_event_lines and event_index >= skip_events:
             try:
-                track_info, hits = parse_event_data(current_event_lines, event_count)
+                track_info, hits = parse_event_data(current_event_lines, event_index)
                 yield track_id, track_info, hits
             except ValueError as e:
                 print(f"Warning: {e}")
