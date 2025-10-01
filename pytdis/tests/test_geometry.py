@@ -38,12 +38,11 @@ class TestGeometryFunctions(unittest.TestCase):
         # Test innermost ring, pad 0
         x, y = get_pad_center(7, 97)
 
-        # delta_x =
-        #
+        # MC data shows x=0.0309282 m = 3.09 cm, y=-0.0778114 m = -7.78 cm
         self.assertAlmostEqual(x, 3.09, delta=RING_WIDTH)
-        self.assertAlmostEqual(y, 7.78, delta=RING_WIDTH)
+        self.assertAlmostEqual(y, -7.78, delta=RING_WIDTH)
 
-        print(x,y, get_pad_approx_width(7), RING_WIDTH)
+        print(x, y, get_pad_approx_width(7), RING_WIDTH)
 
 
 
