@@ -7,34 +7,28 @@
 
 #include <JANA/JEventProcessor.h>
 #include <JANA/JObject.h>
-#include <Acts/Definitions/Units.hpp>
-
-#include <vector>
-#include <fstream>
 #include <fmt/format.h>
 #include <fmt/ostream.h>
 #include <spdlog/spdlog.h>
 
+#include <Acts/Definitions/Units.hpp>
+#include <fstream>
+#include <vector>
+
+#include "Acts/Definitions/Units.hpp"
+#include "logger/LogService.hpp"
+#include "podio_model/Measurement2D.h"
+#include "podio_model/Track.h"
+#include "podio_model/TrackCollection.h"
+#include "podio_model/TrackParameters.h"
 #include "podio_model/TrackSeed.h"
 #include "podio_model/TrackSeedCollection.h"
 #include "podio_model/TrackerHit.h"
-#include "podio_model/Measurement2D.h"
-#include "podio_model/TrackParameters.h"
-#include "podio_model/Track.h"
-#include "podio_model/TrackCollection.h"
 #include "podio_model/Trajectory.h"
 #include "podio_model/TrajectoryCollection.h"
-#include "services/LogService.hpp"
-#include "Acts/Definitions/Units.hpp"
 
 namespace tdis::io{
 class CsvWriterProcessor : public JEventProcessor {
-
-    // Parameters following m_cfg_xxxYyy convention
-    Parameter<std::string> m_cfg_filePrefix {this,
-        "csv:prefix",
-        "output",
-        "File name prefix with path for CSV output files"};
 
     // Input collections
     PodioInput<tdis::TrackSeed> m_in_trackSeeds {this, {"TruthTrackSeeds"}};
@@ -45,7 +39,10 @@ class CsvWriterProcessor : public JEventProcessor {
     Service<tdis::services::LogService> m_svc_log {this};
 
 private:
-    // Member variables following m_xxxYyyy convention
+
+    // taken from tdis:output parameter
+    std::string m_cfg_filePrefix;
+
     std::string m_seedFileName;
     std::string m_hitFileName;
     std::string m_fittedTrackFileName;
@@ -188,22 +185,29 @@ private:
 public:
 
     CsvWriterProcessor() {
-        // Initialize logger
-        m_log = spdlog::get("csv_writer");
-        if (!m_log) {
-            m_log = spdlog::default_logger()->clone("csv_writer");
-        }
-
         SetTypeName(NAME_OF_THIS);
         SetCallbackStyle(CallbackStyle::ExpertMode);
     }
 
     void Init() override {
+
+        // Initialize logger
+        m_log = m_svc_log->logger("CsvWriteProcessor");
+
+        // Get global output prefix name
+        m_cfg_filePrefix = GetApplication()->GetParameterValue<std::string>("tdis:output");
+
         // Construct file names
-        m_seedFileName = fmt::format("{}.seeds.csv", *m_cfg_filePrefix);
-        m_hitFileName = fmt::format("{}.hits.csv", *m_cfg_filePrefix);
-        m_fittedTrackFileName = fmt::format("{}.fitted_tracks.csv", *m_cfg_filePrefix);
-        m_trackStateFileName = fmt::format("{}.track_states.csv", *m_cfg_filePrefix);
+        m_seedFileName = m_cfg_filePrefix + ".seeds.csv";
+        m_hitFileName = m_cfg_filePrefix + ".hits.csv";
+        m_fittedTrackFileName = m_cfg_filePrefix + ".fitted_tracks.csv";
+        m_trackStateFileName = m_cfg_filePrefix + ".track_states.csv";
+
+        m_log->info("Seed output file: {}", m_seedFileName);
+        m_log->info("Hit output file: {}", m_hitFileName);
+        m_log->info("Fitted track output file: {}", m_fittedTrackFileName);
+        m_log->info("Track state output file: {}", m_trackStateFileName);
+        m_log->info("opening files...");
 
         // Open files
         m_seedFile.open(m_seedFileName);
@@ -229,10 +233,7 @@ public:
         writeFittedTrackHeader();
         writeTrackStateHeader();
 
-        m_log->info("Seed output file: {}", m_seedFileName);
-        m_log->info("Hit output file: {}", m_hitFileName);
-        m_log->info("Fitted track output file: {}", m_fittedTrackFileName);
-        m_log->info("Track state output file: {}", m_trackStateFileName);
+        m_log->info("All files are opened and ready for recording...");
     }
 
     void ProcessSequential(const JEvent& event) override {

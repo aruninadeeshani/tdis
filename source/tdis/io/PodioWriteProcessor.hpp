@@ -59,10 +59,10 @@
 #include <thread>
 #include <vector>
 
+#include "logger/LogService.hpp"
 #include "podio_model/Track.h"
 #include "podio_model/TrackCollection.h"
 #include "podio_model/TrackerHit.h"
-#include "services/LogService.hpp"
 
 namespace tdis::io {
 class PodioWriteProcessor : public JEventProcessor {
@@ -114,20 +114,15 @@ inline PodioWriteProcessor::PodioWriteProcessor(JApplication* app) {
     SetTypeName(NAME_OF_THIS);  // Provide JANA with this class's name
 }
 
+
 inline void PodioWriteProcessor::Init() {
     auto* app = m_app;
-    m_log = app->GetService<tdis::services::LogService>()->logger("podio");
+    m_log = app->GetService<tdis::services::LogService>()->logger("PodioWriteProcessor");
 
-    m_app->SetDefaultParameter("podio:output_file", m_output_file, "Podio output file to write to");
-
-    // Allow user to set PODIO:OUTPUT_FILE to "1" to specify using the default name.
-    if (m_output_file == "1") {
-        auto param = m_app->GetJParameterManager()->FindParameter("podio:output_file");
-        if (param) {
-            param->SetValue(param->GetDefault());
-            m_output_file = param->GetDefault();
-        }
-    }
+    // Get global
+    auto outputPrefix =m_app->GetParameterValue<std::string>("tdis:output");
+    m_output_file = outputPrefix + ".tdisedm.root";
+    m_log->info(fmt::format("Writing to {}", m_output_file));
 
     m_app->SetDefaultParameter("podio:print_collections", m_collections_to_print,
         "Comma separated list of collection names to print to screen, e.g. for debugging.");
@@ -150,7 +145,6 @@ inline void PodioWriteProcessor::Process(const std::shared_ptr<const JEvent>& ev
             // chomp
         }
     }
-
 
     // Trigger all collections once to fix the collection IDs
     m_collections_to_write.clear();

@@ -11,15 +11,15 @@
  */
 
 #include <JANA/CLI/JVersion.h>
-#include <JANA/JMultifactory.h>
 #include <JANA/JEvent.h>
+#include <JANA/JMultifactory.h>
 #include <spdlog/spdlog.h>
-
-#include "services/io/podio/datamodel_glue.h"
-#include "services/log/Log_service.h"
 
 #include <string>
 #include <vector>
+
+#include "logger/io/podio/datamodel_glue.h"
+#include "logger/log/Log_service.h"
 
 struct EmptyConfig {};
 
@@ -478,8 +478,8 @@ public:
 
         // Obtain collection name overrides if provided.
         // Priority = [JParameterManager, JOmniFactoryGenerator]
-        m_app->SetDefaultParameter(m_prefix + ":InputTags", default_input_collection_names, "Input collection names");
-        m_app->SetDefaultParameter(m_prefix + ":OutputTags", default_output_collection_names, "Output collection names");
+        m_app->SetDefaultParameter(m_prefix + ":inputs", default_input_collection_names, "Input collection names");
+        m_app->SetDefaultParameter(m_prefix + ":outputs", default_output_collection_names, "Output collection names");
 
         // Figure out variadic inputs
         size_t variadic_input_count = 0;

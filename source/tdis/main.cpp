@@ -12,7 +12,7 @@
 #include "io/CsvWriteProcessor.hpp"
 #include "io/DigitizedDataEventSource.hpp"
 #include "io/PodioWriteProcessor.hpp"
-#include "services/LogService.hpp"
+#include "logger/LogService.hpp"
 #include "tracking/ActsGeometryService.h"
 #include "tracking/KalmanFittingFactory.h"
 #include "tracking/TruthTracksSeedsHitsFactory.h"
@@ -20,6 +20,7 @@
 struct ProgramArguments {
     std::map<std::string, std::string> params;
     std::vector<std::string> filePaths;
+    std::string outputPrefix="tdis_output";
 };
 
 static inline ProgramArguments parseArguments(int argc, char** argv) {
@@ -27,8 +28,10 @@ static inline ProgramArguments parseArguments(int argc, char** argv) {
 
     bool showHelp = false;
     bool showVersion = false;
+    std::string outputPrefix = "";
 
     app.add_flag("--version,-v", showVersion, "Show version information");
+    app.add_flag("--output,-o", outputPrefix, "Output files prefix (no extensions)");
 
     // Define parameters starting with -p or -P (case-insensitive)
     std::vector<std::string> params;
@@ -45,10 +48,6 @@ static inline ProgramArguments parseArguments(int argc, char** argv) {
     }
 
 
-    if (showHelp) {
-        std::cout << app.help() << std::endl;
-        exit(0);
-    }
     if (showVersion) {
         std::cout << "Version 1.0" << std::endl;
         exit(0);
@@ -59,7 +58,6 @@ static inline ProgramArguments parseArguments(int argc, char** argv) {
     auto extras = app.remaining();
     for (size_t i = 0; i < extras.size(); ++i) {
         std::string arg = extras[i];
-        std::string key, value;
 
         // Check if argument starts with -p or -P
         if (arg.size() >= 2 && (arg[0] == '-' || arg[0] == '/') &&
@@ -70,6 +68,8 @@ static inline ProgramArguments parseArguments(int argc, char** argv) {
 
             // Handle -pParam=value
             auto equalPos = arg.find('=');
+
+            std::string key, value;
             if (equalPos != std::string::npos) {
                 key = arg.substr(0, equalPos);
                 value = arg.substr(equalPos + 1);
@@ -83,7 +83,7 @@ static inline ProgramArguments parseArguments(int argc, char** argv) {
             }
 
             // Case-insensitive keys
-            std::transform(key.begin(), key.end(), key.begin(), ::tolower);
+            std::ranges::transform(key, key.begin(), ::tolower);
             paramMap[key] = value;
         } else if (arg[0] != '-') {
             // Assume positional argument (file path)
@@ -99,7 +99,10 @@ int main(int argc, char* argv[]) {
     auto parsedArgs = parseArguments(argc, argv);
 
     // Initiate parameter manager based on program arguments
-    auto parameterManager = new JParameterManager();
+    // ReSharper disable once CppDFAMemoryLeak
+    auto parameterManager = new JParameterManager;
+    parameterManager->SetDefaultParameter("tdis:output", parsedArgs.outputPrefix, "Output prefix for created files (no extension, alias to -o,--output)");
+
     for (const auto& [name, value] : parsedArgs.params)  {
         parameterManager->SetParameter(name, value);
     }
@@ -113,7 +116,7 @@ int main(int argc, char* argv[]) {
 
     auto truthTrackInitGenerator = new JOmniFactoryGeneratorT<tdis::tracking::TruthTracksSeedsHitsFactory>();
     truthTrackInitGenerator->AddWiring(
-        "TruthTracksSeedsHits",
+        "TruthTracksSeedsHitsFactory",
         {"DigitizedMtpcMcTracks"},
         {
             "TruthTrackSeeds",
@@ -125,29 +128,15 @@ int main(int argc, char* argv[]) {
 
     auto kalmanFitterGenerator = new JOmniFactoryGeneratorT<tdis::tracking::KalmanFittingFactory>();
     kalmanFitterGenerator->AddWiring(
-        "KalmanFitterGenerator",
+        "KalmanFittingFactory",
         {"TruthTrackSeeds" },
         {"FittedTrajectories", "FittedTrackParameters", "FittedTracks"});
     app.Add(kalmanFitterGenerator);
 
-
-
-    // auto measurement_2d_generator = new JOmniFactoryGeneratorT<tdis::tracking::Measurement2DFactory>();
-    // measurement_2d_generator->AddWiring("TrackerHitGenerator", {"TrackerHit"}, {"Measurement2D"});
-    // app.Add(measurement_2d_generator);
-
-
     app.Add(new JEventSourceGeneratorT<tdis::io::DigitizedDataEventSource>);
 
-    auto csvProcessor = new tdis::io::CsvWriterProcessor();
-
-    app.Add(csvProcessor);
+    app.Add(new tdis::io::CsvWriterProcessor());
     app.Add(new tdis::io::PodioWriteProcessor(&app));
-
-    // app.Add(new JEventProcessorPodio);
-    // app.Add(new JFactoryGeneratorT<ExampleClusterFactory>());
-    // app.Add(new JFactoryGeneratorT<ExampleMultifactory>());
-    // app.Add(new PodioExampleSource("hits.root"));
 
     // Add source files (do we have them at all?)
     if(parsedArgs.filePaths.empty()) {

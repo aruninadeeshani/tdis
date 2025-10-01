@@ -51,10 +51,10 @@
 #include <vector>
 
 #include "PadGeometryHelper.hpp"
+#include "logger/LogService.hpp"
 #include "podio_model/DigitizedMtpcMcHitCollection.h"
 #include "podio_model/DigitizedMtpcMcTrackCollection.h"
 #include "podio_model/EventInfoCollection.h"
-#include "services/LogService.hpp"
 
 namespace tdis::io {
 
@@ -135,7 +135,7 @@ namespace tdis::io {
 
     inline void DigitizedDataEventSource::Init() {
         auto app = GetApplication();
-        m_log = m_log_svc->logger("io");
+        m_log = m_log_svc->logger("DigitizedDataEventSource");
         m_log->info("Our log level is: ", services::LogLevelToString(m_log->level()));
         m_log->info("Number tracks per event is: {}", m_tracks_per_event());
     }

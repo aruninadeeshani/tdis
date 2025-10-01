@@ -6,7 +6,7 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-#include "BuildCylindricalDetector.h"
+#include "../tracking/BuildCylindricalDetector.h"
 
 #include <spdlog/spdlog.h>  // Ensure SPDLog header is included
 
@@ -29,7 +29,7 @@
 #include <unordered_map>
 #include <vector>
 
-#include "MtpcDetectorElement.hpp"
+#include "../tracking/MtpcDetectorElement.h"
 
 /**
  * Build a cylindrical geometry for the mTPC. One cylinder layer per ring,

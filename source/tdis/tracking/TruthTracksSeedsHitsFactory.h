@@ -2,17 +2,17 @@
 
 #include <JANA/Components/JOmniFactory.h>
 #include <JANA/JFactory.h>
-#include <random>
+
 #include <optional>
+#include <random>
 
 #include "ActsGeometryService.h"
-#include "podio_model/DigitizedMtpcMcTrack.h"
 #include "podio_model/DigitizedMtpcMcHit.h"
+#include "podio_model/DigitizedMtpcMcTrack.h"
 #include "podio_model/Measurement2D.h"
 #include "podio_model/TrackParameters.h"
 #include "podio_model/TrackSeed.h"
 #include "podio_model/TrackerHit.h"
-
 
 namespace tdis::tracking {
 

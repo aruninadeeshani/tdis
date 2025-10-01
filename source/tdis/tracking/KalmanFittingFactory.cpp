@@ -53,14 +53,12 @@ void KalmanFittingFactory::Configure() {
     //m_kalman_fitter = std::make_shared<KF>(*m_propagator);
 
     // Logging
-    m_log = m_log_svc->logger("tracking:kf");
+    m_log = m_log_svc->logger("KalmanFittingFactory");
 
     // Acts logging
     auto actsLvlStr = m_acts_level();
     auto lvl = strToActsLevel(actsLvlStr);
-    m_acts_logger = Acts::getDefaultLogger("tracking:kf", lvl);
-
-
+    m_acts_logger = Acts::getDefaultLogger("KalmanFittingFactory", lvl);
 }
 
 void KalmanFittingFactory::fillMeasurements(
@@ -234,8 +232,8 @@ void KalmanFittingFactory::processTrack(tdis::TrackSeed trackSeed) {
         geoContext,
         startSurf,
         {
-            firstMcHit.getTruePosition().x,
-            firstMcHit.getTruePosition().y,
+            firstMcHit.getPadCenterX(),
+            firstMcHit.getPadCenterY(),
             firstMcHit.getTruePosition().z,
             firstMcHit.getTime()
         },

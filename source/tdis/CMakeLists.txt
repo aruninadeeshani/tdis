@@ -48,7 +48,7 @@ target_include_directories(podio_model_dict PRIVATE "podio_model")
 # --------- CREATE TDIS EXECUTABLE ----------------
 add_executable(tdis
         main.cpp
-        services/LogService.hpp
+        logger/LogService.hpp
         PadGeometryHelper.hpp
 
         io/DigitizedDataEventSource.hpp

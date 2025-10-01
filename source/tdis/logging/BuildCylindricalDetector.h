@@ -8,9 +8,11 @@
 
 #pragma once
 
-#include <memory>
 #include <spdlog/logger.h>
-#include "MtpcDetectorElement.hpp"
+
+#include <memory>
+
+#include "../tracking/MtpcDetectorElement.h"
 
 namespace Acts {
 class TrackingGeometry;
