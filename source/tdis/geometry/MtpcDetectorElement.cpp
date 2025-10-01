@@ -1,10 +1,10 @@
-#include "MtpcDetectorElement.hpp"
+#include "MtpcDetectorElement.h"
 
+#include <Acts/Definitions/Algebra.hpp>
 #include <Acts/Geometry/GeometryContext.hpp>
 #include <Acts/Surfaces/CylinderBounds.hpp>
-#include <Acts/Surfaces/Surface.hpp>
 #include <Acts/Surfaces/CylinderSurface.hpp>
-#include <Acts/Definitions/Algebra.hpp>
+#include <Acts/Surfaces/Surface.hpp>
 
 namespace tdis::tracking {
     // Implementation

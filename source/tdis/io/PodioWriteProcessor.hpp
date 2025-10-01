@@ -59,17 +59,17 @@
 #include <thread>
 #include <vector>
 
+#include "logging/LogService.hpp"
 #include "podio_model/Track.h"
 #include "podio_model/TrackCollection.h"
 #include "podio_model/TrackerHit.h"
-#include "services/LogService.hpp"
 
 namespace tdis::io {
 class PodioWriteProcessor : public JEventProcessor {
 
 public:
     // Get the list of output collections to include/exclude
-    std::vector<std::string> output_collections = {
+    std::set<std::string> m_output_collections = {
         // Header and other metadata
         "EventInfo",
 
@@ -82,7 +82,9 @@ public:
         "TrackerHits",
         "Measurements2D",
 
-        "FittedTrajectories", "FittedTrackParams", "FittedTracks"
+        "FittedTrajectories",
+        "FittedTrackParameters",
+        "FittedTracks"
     };
 
   PodioWriteProcessor(JApplication * app);
@@ -100,7 +102,6 @@ public:
   std::shared_ptr<spdlog::logger> m_log;
   std::string m_output_file = "podio_output.root";
 
-  std::set<std::string> m_output_collections;  // config. parameter
   std::vector<std::string> m_collections_to_write;  // derived from above config. parameters
   std::vector<std::string> m_collections_to_print;
   JApplication * m_app;
@@ -113,32 +114,17 @@ inline PodioWriteProcessor::PodioWriteProcessor(JApplication* app) {
     SetTypeName(NAME_OF_THIS);  // Provide JANA with this class's name
 }
 
+
 inline void PodioWriteProcessor::Init() {
     auto* app = m_app;
     m_log = app->GetService<tdis::services::LogService>()->logger("PodioWriteProcessor");
 
-    m_app->SetDefaultParameter("podio:output_file", m_output_file, "Podio output file to write to");
+    // Get global
+    auto outputPrefix =m_app->GetParameterValue<std::string>("tdis:output");
+    m_output_file = outputPrefix + ".tdisedm.root";
+    m_log->info(fmt::format("Writing to {}", m_output_file));
 
-    // Allow user to set PODIO:OUTPUT_FILE to "1" to specify using the default name.
-    if (m_output_file == "1") {
-        auto param = m_app->GetJParameterManager()->FindParameter("podio:output_file");
-        if (param) {
-            param->SetValue(param->GetDefault());
-            m_output_file = param->GetDefault();
-        }
-    }
-
-    m_app->SetDefaultParameter(
-        "podio:output_collections", output_collections,
-        "Comma separated list of collection names to write out. If not set, all collections will "
-        "be written (including ones from input file). Don't set this and use "
-        "PODIO:OUTPUT_EXCLUDE_COLLECTIONS to write everything except a selection.");
-
-    m_output_collections
-        = std::set<std::string>(output_collections.begin(), output_collections.end());
-
-    m_app->SetDefaultParameter(
-        "podio:print_collections", m_collections_to_print,
+    m_app->SetDefaultParameter("podio:print_collections", m_collections_to_print,
         "Comma separated list of collection names to print to screen, e.g. for debugging.");
 
     m_writer = std::make_unique<podio::ROOTWriter>(m_output_file);
@@ -150,16 +136,15 @@ inline void PodioWriteProcessor::Process(const std::shared_ptr<const JEvent>& ev
 
     [[maybe_unused]] auto tracks = event->GetCollection<tdis::Track>("FittedTracks");
 
-    m_log->info("PodioWriteProcessor::Process() All event collections:");
+    m_log->debug("PodioWriteProcessor::Process() All event collections:");
     auto event_collections = event->GetAllCollectionNames();
     for (const auto& coll_name : event_collections) {
         try {
-            m_log->info("   {}", coll_name);
+            m_log->debug("   {}", coll_name);
         } catch (std::exception& e) {
             // chomp
         }
     }
-
 
     // Trigger all collections once to fix the collection IDs
     m_collections_to_write.clear();
@@ -267,9 +252,12 @@ inline void PodioWriteProcessor::Process(const std::shared_ptr<const JEvent>& ev
     m_writer->writeFrame(*frame, "events", m_collections_to_write);
 
     auto [missing_names, all_names] = m_writer->checkConsistency(m_collections_to_write, "");
-    m_log->info("PODIO checkConsistency missing_names: {}", missing_names.size());
-    for (const auto& coll_name : missing_names) {
-        m_log->info("   {}", coll_name);
+
+    if (!missing_names.empty()) {
+        m_log->warn("PODIO checkConsistency missing_names: {}", missing_names.size());
+        for (const auto& coll_name : missing_names) {
+            m_log->info("   {}", coll_name);
+        }
     }
     m_is_first_event = false;
 }

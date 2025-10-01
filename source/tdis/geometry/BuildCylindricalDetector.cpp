@@ -29,7 +29,7 @@
 #include <unordered_map>
 #include <vector>
 
-#include "MtpcDetectorElement.hpp"
+#include "geometry/MtpcDetectorElement.h"
 
 /**
  * Build a cylindrical geometry for the mTPC. One cylinder layer per ring,
@@ -83,7 +83,7 @@ std::unique_ptr<const Acts::TrackingGeometry> tdis::tracking::buildCylindricalDe
     log->info("Building cylindrical mTPC geometry with:");
     log->info("  innerRadius = {:.3f} mm, outerRadius = {:.3f} mm, cylinderLength = {:.3f} mm",
         innerRadius/ActsUnits::mm, outerRadius/ActsUnits::mm, cylinderLength/ActsUnits::mm);
-    log->info("  halfLength  = {:.3f} mm, numRings = {:.3f}, radialStep = {:.3f} mm",
+    log->info("  halfLength  = {:.3f} mm, numRings = {:.3f}, radialStep/thickness = {:.3f} mm",
         halfLength/ActsUnits::mm, numRings/ActsUnits::mm, radialStep/ActsUnits::mm);
 
     // We store the final layers as generic Layer pointers
@@ -103,8 +103,8 @@ std::unique_ptr<const Acts::TrackingGeometry> tdis::tracking::buildCylindricalDe
         // Unique ID for the ring
         uint32_t id = static_cast<uint32_t>(i);
 
-        log->info("  Ring id={:<3} => radius = {:.3f} mm, halfLength = {:.3f} mm, thickness = {:.3f}, radius+step={:.3f}",
-                   id, ringRadius/ActsUnits::mm, halfLength/ActsUnits::mm, radialStep/ActsUnits::mm, ringRadius+radialStep);
+        log->info("  Ring id={:<3} => radius = {:<7.3f} mm radius+radialStep={:.3f}",
+                   id, ringRadius/ActsUnits::mm, ringRadius+radialStep);
 
         // Identity transform for the element
         auto elementTransform = std::make_shared<const Transform3>(Transform3::Identity());

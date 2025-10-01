@@ -2,21 +2,22 @@
 
 #include <JANA/Components/JOmniFactory.h>
 #include <JANA/JFactory.h>
-#include <random>
-#include <optional>
 
-#include "ActsGeometryService.h"
-#include "podio_model/DigitizedMtpcMcTrack.h"
+#include <optional>
+#include <random>
+
+#include "geometry/ActsGeometryService.h"
+#include "geometry/TGeoGeometryService.h"
 #include "podio_model/DigitizedMtpcMcHit.h"
+#include "podio_model/DigitizedMtpcMcTrack.h"
 #include "podio_model/Measurement2D.h"
 #include "podio_model/TrackParameters.h"
 #include "podio_model/TrackSeed.h"
 #include "podio_model/TrackerHit.h"
 
-
 namespace tdis::tracking {
 
-    struct TruthTracksHitsSeedsFactory : public JOmniFactory<TruthTracksHitsSeedsFactory> {
+    struct TruthTracksSeedsHitsFactory : public JOmniFactory<TruthTracksSeedsHitsFactory> {
         // Input
         PodioInput<tdis::DigitizedMtpcMcTrack> m_in_mcTracks {this, {"DigitizedMtpcMcTracks"}};
 

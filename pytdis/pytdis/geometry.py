@@ -31,6 +31,7 @@ the pads are rectangular with a different aspect ratio for each ring, depending 
 i.e. smaller pads are located at the innermost radii.
 """
 import math
+from typing import Tuple
 
 import numpy as np
 
@@ -48,7 +49,7 @@ DELTA_THETA_DEG = 360.0 / NUM_PADS_PER_RING
 DELTA_THETA = 2 * np.pi / NUM_PADS_PER_RING
 
 
-def get_pad_center(ring: int, pad: int) -> tuple[float, float]:
+def get_pad_center(ring: int, pad: int) -> Tuple[float, float]:
     """
     Compute the X and Y coordinates of the center of a pad given its ring and pad indices.
 
@@ -87,7 +88,7 @@ def get_pad_center(ring: int, pad: int) -> tuple[float, float]:
         theta_offset = DELTA_THETA / 2  # Odd rings
 
     # Compute the angular center of the pad
-    theta_center =  pad * DELTA_THETA + theta_offset + DELTA_THETA
+    theta_center = pad * DELTA_THETA + theta_offset
 
     # Convert from polar to Cartesian coordinates
     x = r_center * np.cos(theta_center)
@@ -96,7 +97,7 @@ def get_pad_center(ring: int, pad: int) -> tuple[float, float]:
     return x, y
 
 
-def get_ring_radii(ring: int) -> tuple[float, float]:
+def get_ring_radii(ring: int) -> Tuple[float, float]:
     """
     Get the inner and outer radii for a given ring.
 
@@ -121,7 +122,7 @@ def get_ring_radii(ring: int) -> tuple[float, float]:
     return r_inner, r_outer
 
 
-def get_pad_angular_bounds(ring: int, pad: int) -> tuple[float, float]:
+def get_pad_angular_bounds(ring: int, pad: int) -> Tuple[float, float]:
     """
     Get the angular bounds (in radians) for a given pad.
 

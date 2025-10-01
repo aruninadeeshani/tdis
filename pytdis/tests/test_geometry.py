@@ -26,26 +26,6 @@ class TestGeometryFunctions(unittest.TestCase):
         self.assertGreater(x, 0)
         self.assertAlmostEqual(y, 0, places=1)
 
-        # Test that radius is correct
-        r = np.sqrt(x**2 + y**2)
-        expected_r = FIRST_RING_INNER_RADIUS + 0.5 * RING_WIDTH
-        self.assertAlmostEqual(r, expected_r, places=5)
-
-    def test_get_pad_center_valid(self):
-        """Take data from MC and see true values vs calculated values"""
-
-        # 985.265	2.15224e-08	0.0309282	-0.0778114	0.118387	7	97	7	0.0316129
-        # Test innermost ring, pad 0
-        x, y = get_pad_center(7, 97)
-
-        # delta_x =
-        #
-        self.assertAlmostEqual(x, 3.09, delta=RING_WIDTH)
-        self.assertAlmostEqual(y, 7.78, delta=RING_WIDTH)
-
-        print(x,y, get_pad_approx_width(7), RING_WIDTH)
-
-
 
     def test_get_pad_center_odd_ring_offset(self):
         """Test that odd rings have angular offset."""

@@ -1,13 +1,14 @@
-// Copyright 2022, David Lawrence
-// Subject to the terms in the LICENSE file found in the top-level directory.
-//
-//
-
-#include "ActsGeometryService.h"
-
 #include <JANA/JException.h>
 #include <TGeoManager.h>
 #include <TGeoTube.h>
+#include <iostream>
+#include <string>
+#include "TGeoManager.h"
+#include "TGeoNode.h"
+#include "TGeoVolume.h"
+#include "TGeoShape.h"
+#include "TGeoMatrix.h"
+
 #include <extensions/spdlog/SpdlogToActs.h>
 #include <fmt/ostream.h>
 
@@ -23,25 +24,10 @@
 #include <string>
 #include <string_view>
 
+#include "TGeoGeometryService.h"
 #include "BuildCylindricalDetector.h"
-#include "services/LogService.hpp"
+#include "logging/LogService.hpp"
 
-// Formatter for Eigen matrices
-#if FMT_VERSION >= 90000
-#    include <Eigen/Core>
-
-namespace Acts {
-    class JsonMaterialDecorator;
-}
-template <typename T>
-struct fmt::formatter<
-    T,
-    std::enable_if_t<
-        std::is_base_of_v<Eigen::MatrixBase<T>, T>,
-        char
-    >
-> : fmt::ostream_formatter {};
-#endif // FMT_VERSION >= 90000
 
 
 namespace {
@@ -111,13 +97,6 @@ namespace {
     }
 
 
-#include <iostream>
-#include <string>
-#include "TGeoManager.h"
-#include "TGeoNode.h"
-#include "TGeoVolume.h"
-#include "TGeoShape.h"
-#include "TGeoMatrix.h"
 
     // Recursive function to find the node and compute its global matrix
     bool findNodeGlobalMatrix(TGeoNode* currentNode, TGeoNode* targetNode, TGeoHMatrix& globalMatrix) {
@@ -254,14 +233,13 @@ namespace {
 }
 
 
-void tdis::tracking::ActsGeometryService::Init() {
+void tdis::tracking::TGeoGeometryService::Init() {
 
-    m_log = m_service_log->logger("acts");
-    m_init_log = m_service_log->logger("acts_init");
+    m_log = m_service_log->logger("TGeoGeometryService");
 
-    m_init_log->debug("ActsGeometryService is initializing...");
+    m_log->debug("TGeoGeometryService is initializing...");
 
-    m_init_log->debug("Set TGeoManager and acts_init_log_level log levels");
+    m_log->debug("Set TGeoManager and acts_init_log_level log levels");
     // Turn off TGeo printouts if appropriate for the msg level
     if (m_log->level() >= (int) spdlog::level::info) {
         TGeoManager::SetVerboseLevel(0);
@@ -273,28 +251,8 @@ void tdis::tracking::ActsGeometryService::Init() {
     auto was_ticker_enabled = m_app->IsTickerEnabled();
     m_app->SetTicker(false);
 
-
-    // Set ACTS logging level
-    auto acts_init_log_level = tdis::SpdlogToActsLevel(m_init_log->level());
-
-    // Load ACTS materials maps
-    std::shared_ptr<const Acts::IMaterialDecorator> materialDeco{nullptr};
-    if (!m_material_map_file().empty()) {
-        m_init_log->info("loading materials map from file: '{}'", m_material_map_file());
-        // Set up the converter first
-        Acts::MaterialMapJsonConverter::Config jsonGeoConvConfig;
-        // Set up the json-based decorator
-        try {
-            materialDeco = std::make_shared<const Acts::JsonMaterialDecorator>(jsonGeoConvConfig, m_material_map_file(), acts_init_log_level);
-        }
-        catch (const std::exception& e) {
-            m_init_log->error("Failed to load materials map: {}", e.what());
-            exit(1);    // TODO this is due to JANA2 issue #381. Remove after is fixed
-        }
-    }
-
     // Convert DD4hep geometry to ACTS
-    m_init_log->info("Converting TGeo geometry to ACTS...");
+    m_log->info("Converting TGeo geometry to ACTS...");
     auto logger = tdis::makeActsLogger("CONV", m_log);
 
     m_log->info("Loading geometry file: ");
@@ -302,17 +260,17 @@ void tdis::tracking::ActsGeometryService::Init() {
 
     m_tgeo_manager = TGeoManager::Import(m_tgeo_file().c_str());
     if(!m_tgeo_manager) {
-        m_init_log->error("Failed to load GeometryFile: TGeoManager::Import returned NULL");
+        m_log->error("Failed to load GeometryFile: TGeoManager::Import returned NULL");
         exit(1);    // TODO this is due to JANA2 issue #381. Remove after is fixed
     }
 
     if(!m_tgeo_manager->GetTopNode()) {
-        m_init_log->error("Failed to load GeometryFile: TGeoManager::GetTopNode returned NULL");
+        m_log->error("Failed to load GeometryFile: TGeoManager::GetTopNode returned NULL");
         exit(1);    // TODO this is due to JANA2 issue #381. Remove after is fixed
     }
 
     if(!m_tgeo_manager->GetTopVolume()) {
-        m_init_log->error("Failed to load GeometryFile: TGeoManager::GetTopVolume returned NULL");
+        m_log->error("Failed to load GeometryFile: TGeoManager::GetTopVolume returned NULL");
         exit(1);    // TODO this is due to JANA2 issue #381. Remove after is fixed
     }
 
@@ -329,7 +287,7 @@ void tdis::tracking::ActsGeometryService::Init() {
     std::array<double, 2> bounds{{25, 100}};
     double thickness{0.1};
 
-    m_init_log->info("Found readout disks: {}", disk_nodes.size());
+    m_log->info("Found readout disks: {}", disk_nodes.size());
     for (auto node : disk_nodes) {
 
         auto [x,y,z] = getGlobalPosition(node);
@@ -340,8 +298,8 @@ void tdis::tracking::ActsGeometryService::Init() {
 
         // Check it is TGeoTube as expected
         if (shapeType != "TGeoTube") {
-            m_init_log->warn("For TGeoNode('{}') TGeoVolume ('{}') the shape not a TGeoTube as expected but: ", node->GetName(), volume->GetName(), shapeType);
-            m_init_log->warn("We consider this as recoverable, but it might be if all readout disks are defined with other shape or something. Check this!");
+            m_log->warn("For TGeoNode('{}') TGeoVolume ('{}') the shape not a TGeoTube as expected but: ", node->GetName(), volume->GetName(), shapeType);
+            m_log->warn("We consider this as recoverable, but it might be if all readout disks are defined with other shape or something. Check this!");
             continue;
         }
 
@@ -362,56 +320,6 @@ void tdis::tracking::ActsGeometryService::Init() {
         stereos.push_back(0);
     }
 
-    m_init_log->info("Building ACTS Geometry");
-
-    /// Return the telescope detector
-    // TODO remove it. This is from the old implementation
-    // gGeometry = tdis::tracking::buildCylindricalDetector(
-    //         nominalContext,             // gctx is the detector element dependent geometry context
-    //         m_detector_elements,        // detectorStore is the store for the detector element
-    //         m_plane_positions,          // positions are the positions of different layers in the longitudinal direction
-    //         stereos,                    // stereoAngles are the stereo angles of different layers, which are rotation angles around the longitudinal (normal) direction
-    //         offsets,                    // is the offset (u, v) of the layers in the transverse plane
-    //         bounds,                     // bounds is the surface bound values, minR and maxR
-    //         thickness,                  // thickness is the material thickness of each layer
-    //         Acts::BinningValue::binZ);
-
-    m_detector_cylinders.clear();
-
-    gGeometry = tdis::tracking::buildCylindricalDetector(
-        m_init_log,
-        nominalContext,             // Geometry context
-        m_detector_cylinders     // Detector element store
-    );
-
-
-    // Visualize ACTS geometry
-    const Acts::TrackingVolume& tgVolume = *(gGeometry->highestTrackingVolume());
-
-    // OBJ visualization export
-    auto obj_file = m_obj_output_file();
-    if(!m_obj_output_file().empty()) {
-        m_log->info("ACTS exporting to OBJ: {}", m_obj_output_file());
-        Acts::ObjVisualization3D vis_helper;
-        DrawTrackingGeometry(vis_helper, tgVolume, m_geometry_context);
-        vis_helper.write(m_obj_output_file());
-    } else {
-        m_log->info("ACTS OBJ Export. Flag '{}' is empty. NOT exporting.", m_obj_output_file.m_name);
-    }
-
-    // PLY visualization export
-    if(!m_ply_output_file().empty()) {
-        m_log->info("ACTS exporting to PLY: {}", m_ply_output_file());
-        Acts::PlyVisualization3D vis_helper;
-        DrawTrackingGeometry(vis_helper, tgVolume, m_geometry_context);
-        vis_helper.write(m_ply_output_file());
-    } else {
-        m_log->info("ACTS PLY Export. Flag '{}' is empty. NOT exporting.", m_ply_output_file.m_name);
-    }
-
-    // Set ticker back
-    m_app->SetTicker(was_ticker_enabled);
-
-    m_init_log->info("ActsGeometryService initialization complete");
+    m_log->info("TGeoGeometryService initialization complete");
 }
 

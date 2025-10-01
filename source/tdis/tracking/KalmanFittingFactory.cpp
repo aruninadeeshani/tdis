@@ -5,16 +5,14 @@
 #include <ActsExamples/EventData/IndexSourceLink.hpp>
 #include <ActsExamples/EventData/MeasurementCalibration.hpp>
 
+#include "../logging/ActsLogHeplers.h"
 #include "Acts/Plugins/Podio/PodioTrackContainer.hpp"
 #include "Acts/Plugins/Podio/PodioTrackStateContainer.hpp"
 #include "Acts/Plugins/Podio/PodioUtil.hpp"
 #include "Acts/TrackFitting/GainMatrixSmoother.hpp"
 #include "Acts/TrackFitting/GainMatrixUpdater.hpp"
-#include "ActsLogHeplers.h"
-#include "PadGeometryHelper.hpp"
-#include "PodioSurfaceIdConverter.h"
 #include "RefittingCalibrator.h"
-#include "TrackingTypes.h"
+#include "geometry/TdisGeometryHelper.hpp"
 #include "podio_model/DigitizedMtpcMcTrack.h"
 #include "podio_model/DigitizedMtpcMcTrackCollection.h"
 #include "podio_model/Measurement2DCollection.h"
@@ -55,14 +53,12 @@ void KalmanFittingFactory::Configure() {
     //m_kalman_fitter = std::make_shared<KF>(*m_propagator);
 
     // Logging
-    m_log = m_log_svc->logger("tracking:kf");
+    m_log = m_log_svc->logger("KalmanFittingFactory");
 
     // Acts logging
     auto actsLvlStr = m_acts_level();
     auto lvl = strToActsLevel(actsLvlStr);
-    m_acts_logger = Acts::getDefaultLogger("tracking:kf", lvl);
-
-
+    m_acts_logger = Acts::getDefaultLogger("KalmanFittingFactory", lvl);
 }
 
 void KalmanFittingFactory::fillMeasurements(
@@ -86,7 +82,7 @@ void KalmanFittingFactory::fillMeasurements(
         auto reconstructedHit = measurement.getHits().at(0);
         auto mcHit = reconstructedHit.getRawHit();
 
-        m_log->info(
+        m_log->debug(
             "   id={:<4} plane={:<3} ring={:<3} pad={:<3}, x={:<7.2f} y={:<7.2f}, z={:<7.2f}, Perigee.z={:<6.2f} surf-id={}",
             mcHit.id().index, mcHit.getPlane(), mcHit.getRing(), mcHit.getPad(),
             mcHit.getTruePosition().x / Acts::UnitConstants::mm,
@@ -236,8 +232,8 @@ void KalmanFittingFactory::processTrack(tdis::TrackSeed trackSeed) {
         geoContext,
         startSurf,
         {
-            firstMcHit.getTruePosition().x,
-            firstMcHit.getTruePosition().y,
+            firstMcHit.getPadCenterX(),
+            firstMcHit.getPadCenterY(),
             firstMcHit.getTruePosition().z,
             firstMcHit.getTime()
         },
@@ -259,7 +255,7 @@ void KalmanFittingFactory::processTrack(tdis::TrackSeed trackSeed) {
     //      Acts::ParticleHypothesis::proton()
     // );
 
-    m_log->info("Initial track parameters: p = {:.3f} GeV, theta = {:.3f} deg, phi = {:.3f} deg, vz = {:.3f} mm",
+    m_log->debug("Initial track parameters: p = {:.3f} GeV, theta = {:.3f} deg, phi = {:.3f} deg, vz = {:.3f} mm",
             1 / podioInitParams.getQOverP() / Acts::UnitConstants::GeV,
             podioInitParams.getTheta() / Acts::UnitConstants::degree,
             podioInitParams.getPhi() / Acts::UnitConstants::degree,
@@ -362,11 +358,11 @@ void KalmanFittingFactory::processTrack(tdis::TrackSeed trackSeed) {
     auto tip = trackProxy.tipIndex();
     auto absMom = trackProxy.absoluteMomentum();
     auto mcTrack = trackSeed.getMcTrack();
-    m_log->info("trackProxy.tipIndex() = {}", trackProxy.tipIndex());
-    m_log->info("mcTrack.mom = {} reco mom = {}", mcTrack.getMomentum(), absMom);
-    m_log->info("mcTrack.theta = {} reco = {}", mcTrack.getTheta(), trackProxy.theta());
-    m_log->info("mcTrack.phi  = {} reco phi {}", mcTrack.getPhi(), trackProxy.phi());
-    m_log->info("reco chi2 {} nDoF {} chi2/ndof {}", trackProxy.chi2(), trackProxy.nDoF(), trackProxy.chi2()/ trackProxy.nDoF());
+    m_log->debug("trackProxy.tipIndex() = {}", trackProxy.tipIndex());
+    m_log->debug("mcTrack.mom = {} reco mom = {}", mcTrack.getMomentum(), absMom);
+    m_log->debug("mcTrack.theta = {} reco = {}", mcTrack.getTheta(), trackProxy.theta());
+    m_log->debug("mcTrack.phi  = {} reco phi {}", mcTrack.getPhi(), trackProxy.phi());
+    m_log->debug("reco chi2 {} nDoF {} chi2/ndof {}", trackProxy.chi2(), trackProxy.nDoF(), trackProxy.chi2()/ trackProxy.nDoF());
 
     m_log->debug("Successfully fitted track => track p {} in container",
                     trackProxy.absoluteMomentum());
@@ -377,14 +373,14 @@ void KalmanFittingFactory::processTrack(tdis::TrackSeed trackSeed) {
     double theta = params[Acts::eBoundTheta];
     double phi = params[Acts::eBoundPhi];
 
-    m_log->info("qOverP = params[Acts::eBoundQOverP]; = {}", qOverP);
-    m_log->info("momentum = std::abs(1.0 / qOverP); = {}", momentum);
-    m_log->info("theta = params[Acts::eBoundTheta]; = {}", theta);
-    m_log->info("phi = params[Acts::eBoundPhi]; = {}", phi);
+    m_log->debug("qOverP = params[Acts::eBoundQOverP]; = {}", qOverP);
+    m_log->debug("momentum = std::abs(1.0 / qOverP); = {}", momentum);
+    m_log->debug("theta = params[Acts::eBoundTheta]; = {}", theta);
+    m_log->debug("phi = params[Acts::eBoundPhi]; = {}", phi);
 
     for (auto state : trackProxy.trackStatesReversed()) {
         if (state.hasSmoothed()) {
-            m_log->info("Smoothed params at {}: loc0={}, loc1={}, phi={}, theta={}, qOverP={}, momentum={}",
+            m_log->debug("Smoothed params at {}: loc0={}, loc1={}, phi={}, theta={}, qOverP={}, momentum={}",
                         state.index(),
                         state.smoothed()[Acts::eBoundLoc0],
                         state.smoothed()[Acts::eBoundLoc1],
@@ -395,10 +391,10 @@ void KalmanFittingFactory::processTrack(tdis::TrackSeed trackSeed) {
         }
     }
 
-    m_log->info("N STATES: {}", trackProxy.nTrackStates());
-    m_log->info("N MEAS: {}", trackProxy.nMeasurements());
-    m_log->info("N OUTLIERS: {}", trackProxy.nOutliers());
-    m_log->info("N HOLES: {}", trackProxy.nHoles());
+    m_log->debug("N STATES: {}", trackProxy.nTrackStates());
+    m_log->debug("N MEAS: {}", trackProxy.nMeasurements());
+    m_log->debug("N OUTLIERS: {}", trackProxy.nOutliers());
+    m_log->debug("N HOLES: {}", trackProxy.nHoles());
 
     /// ========================== CONVERT TO EDM ====================================
 
@@ -432,7 +428,11 @@ void KalmanFittingFactory::processTrack(tdis::TrackSeed trackSeed) {
     // Create TrackParameters object (at the track tip/end)
     auto trackParams = m_out_track_params()->create();
     trackParams.setType(0); // Type 0 = track head/tip
-    trackParams.setSurface(trackProxy.referenceSurface().geometryId().value());
+    if (trackProxy.hasReferenceSurface()) {
+        trackParams.setSurface(trackProxy.referenceSurface().geometryId().value());
+    }
+
+
 
     // Set track parameters - note the direct access to avoid the absoluteMomentum() issue
     trackParams.setLoc({
@@ -537,7 +537,7 @@ void KalmanFittingFactory::processTrack(tdis::TrackSeed trackSeed) {
     );
 
     // Log the results
-    m_log->info("Track successfully converted: p={:.3f} GeV, theta={:.3f} deg, phi={:.3f} deg, chi2/ndf={:.2f}",
+    m_log->debug("Track successfully converted: p={:.3f} GeV, theta={:.3f} deg, phi={:.3f} deg, chi2/ndf={:.2f}",
                 momentum / Acts::UnitConstants::GeV,
                 theta / Acts::UnitConstants::degree,
                 phi / Acts::UnitConstants::degree,

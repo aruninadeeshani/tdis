@@ -13,8 +13,8 @@
 #include <memory>
 #include <mutex>
 
-#include "MtpcDetectorElement.hpp"
-#include "services/LogService.hpp"
+#include "geometry/MtpcDetectorElement.h"
+#include "logging/LogService.hpp"
 
 namespace tdis::tracking {
     class ActsGeometryService : public JService {
@@ -24,15 +24,7 @@ namespace tdis::tracking {
 
         void Init() override;
 
-        TGeoManager* GetGeoManager() const { return m_tgeo_manager; }
-
-        TGeoVolume* GetTopVolume() const { return m_tgeo_manager->GetTopVolume(); }
-
-        TGeoNode* GetTopNode() const { return m_tgeo_manager->GetTopNode(); }
-
         Acts::GeometryContext& GetActsGeometryContext() { return m_geometry_context; }
-
-        const std::vector<double>& GetPlanePositions() const { return m_plane_positions; }
 
         template <typename TVis> void DrawTrackingGeometry(TVis& vis_helper,
                                                            const Acts::TrackingVolume& tVolume,
@@ -48,23 +40,15 @@ namespace tdis::tracking {
         }
 
       private:
-        Parameter<std::string> m_tgeo_file{this, "acts:geometry", "g4sbs_mtpc.root","TGeo filename with geometry for ACTS"};
-        Parameter<std::string> m_material_map_file{this, "acts:material_map", "", "JSON/CBOR material map file path"};
-        Parameter<std::string> m_obj_output_file{this, "acts:output_obj", "", "Output file name to dump ACTS converted geometry as OBJ"};
-        Parameter<std::string> m_ply_output_file{this, "acts:output_ply", "", "Output file name to dump ACTS converted geometry as PLY"};
 
-        Service<tdis::services::LogService> m_service_log{this};
+        Parameter<std::string> m_material_map_file{this, "ActsGeometryService:material_map", "", "JSON/CBOR material map file path"};
+        Parameter<std::string> m_obj_output_file{this, "ActsGeometryService:output_obj", "", "Output file name to dump ACTS converted geometry as OBJ"};
+        Parameter<std::string> m_ply_output_file{this, "ActsGeometryService:output_ply", "", "Output file name to dump ACTS converted geometry as PLY"};
+
+        Service<tdis::services::LogService> m_svc_log{this};
 
         // General acts log
         std::shared_ptr<spdlog::logger> m_log;
-
-        /// Logger that is used for geometry initialization
-        /// By default its level the same as ACTS general logger (m_log)
-        /// But it might be customized to solely printout geometry information
-        std::shared_ptr<spdlog::logger> m_init_log;
-
-        /// Root TGeo Manater for TGeo Geometry
-        TGeoManager* m_tgeo_manager = nullptr;
 
         Acts::GeometryContext m_geometry_context = Acts::GeometryContext();
 
@@ -75,8 +59,6 @@ namespace tdis::tracking {
 
         std::shared_ptr<const Acts::TrackingGeometry> gGeometry;
 
-        // Plane positions
-        std::vector<double> m_plane_positions;
     };
 
 

@@ -1,4 +1,4 @@
-#include "TruthTracksHitsSeedsFactory.h"
+#include "TruthTracksSeedsHitsFactory.h"
 
 #include <podio_model/DigitizedMtpcMcTrack.h>
 #include <podio_model/DigitizedMtpcMcTrackCollection.h>
@@ -7,7 +7,7 @@
 #include <Acts/Surfaces/CylinderBounds.hpp>
 #include <Acts/Surfaces/PerigeeSurface.hpp>
 
-#include "PadGeometryHelper.hpp"
+#include "geometry/TdisGeometryHelper.hpp"
 #include "podio_model/Measurement2DCollection.h"
 #include "podio_model/TrackParametersCollection.h"
 #include "podio_model/TrackSeedCollection.h"
@@ -25,22 +25,22 @@ inline double get_variance(const double pixel_size) {
 
 namespace tdis::tracking {
 
-    void TruthTracksHitsSeedsFactory::Configure() {
+    void TruthTracksSeedsHitsFactory::Configure() {
         m_service_geometry();
-        m_log = m_service_log->logger("TruthTracksHitsSeedsFactory");
+        m_log = m_service_log->logger("TruthTracksSeedsHitsFactory");
 
         // Initialize random generator
         std::random_device rd;
         m_generator = std::mt19937(rd());
     }
 
-    double TruthTracksHitsSeedsFactory::generateNormal(double mean, double stddev) {
+    double TruthTracksSeedsHitsFactory::generateNormal(double mean, double stddev) {
         std::normal_distribution<double> distribution(mean, stddev);
         return distribution(m_generator);
     }
 
     std::pair<std::optional<tdis::TrackerHit>, std::optional<tdis::Measurement2D>> 
-    TruthTracksHitsSeedsFactory::createHitAndMeasurement(
+    TruthTracksSeedsHitsFactory::createHitAndMeasurement(
         const tdis::DigitizedMtpcMcHit& mcHit,
         int plane,
         uint64_t event_index,
@@ -149,7 +149,7 @@ namespace tdis::tracking {
         return {hit, meas2D};
     }
 
-    tdis::TrackSeed TruthTracksHitsSeedsFactory::createTrackSeedWithParameters(
+    tdis::TrackSeed TruthTracksSeedsHitsFactory::createTrackSeedWithParameters(
         const tdis::DigitizedMtpcMcTrack& mc_track,
         const std::vector<tdis::TrackerHit>& trackHits,
         const std::vector<tdis::Measurement2D>& trackMeasurements)
@@ -260,10 +260,10 @@ namespace tdis::tracking {
         return seed;
     }
 
-    void TruthTracksHitsSeedsFactory::Execute(int32_t /*run_nr*/, uint64_t event_index) {
+    void TruthTracksSeedsHitsFactory::Execute(int32_t /*run_nr*/, uint64_t event_index) {
         namespace ActsUnits = Acts::UnitConstants;
 
-        auto plane_positions = m_service_geometry->GetPlanePositions();
+        const auto planePositions = getPlanePositions();
 
         m_log->trace("TruthTrackSeedFactory, processing event: {}", event_index);
 
@@ -285,8 +285,7 @@ namespace tdis::tracking {
 
             int plane_idx = 0;
             for (const auto& mcHit : mc_track.getHits()) {
-                auto [hit_opt, meas_opt] = createHitAndMeasurement(
-                    mcHit, plane_idx++, event_index, plane_positions);
+                auto [hit_opt, meas_opt] = createHitAndMeasurement(mcHit, plane_idx++, event_index, planePositions);
                 
                 if (hit_opt.has_value() && meas_opt.has_value()) {
                     trackHits.push_back(hit_opt.value());

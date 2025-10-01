@@ -1,9 +1,12 @@
 # TDIS Package Installation Guide
 
-["Containers" documentation to setup environment and run](containers.md)
+?> _RUN_ preconfigured and precompiled `tdis` software
+?> - [Use containers](containers.md)
+?> - [IFarm tutorial](ifarm-tutorial.md)
 
 This page covers the installation process for the `tdis` package.
-The installation is standard for CMake packages. 
+
+**The installation is standard for CMake packages** 
 
 ## Prerequisites
 
@@ -14,8 +17,8 @@ The installation is standard for CMake packages.
 
 ### Required Dependencies
 The following packages must be installed before building `tdis`. 
-We can use [eicdev/tdis-pre container](containers.md) with preinstalled
-requirements. At least this container was designed for it. 
+[eicdev/tdis-pre container](containers.md) container with preinstalled
+and configured requirements can be used. At least this container was designed for it. 
 
 1. **JANA** - Jefferson Lab's multi-threaded framework
 2. **podio** - Event data model library
@@ -29,46 +32,34 @@ requirements. At least this container was designed for it.
     - ActsExamplesFramework library
 
 ### Automatically Fetched Dependencies
-The following dependencies are automatically downloaded during the build process:
+The following dependencies are automatically downloaded by CMake during the build process:
 - **CLI11** - Command line parser
 - **spdlog** - Fast C++ logging library
 
 ## Installation Steps
 
-### 1. Clone the Repository
+
 ```bash
+
+# 1. Clone the Repository
 git clone https://github.com/JeffersonLab/tdis
 cd tdis
-```
 
-### 2. Configure with CMake
-```bash
-# You must create a build directory.
+# 2. Configure with CMake
 mkdir build
 cd build
 cmake -DCMAKE_INSTALL_PREFIX=/path/to/install ..
-```
 
-For custom configurations, you can specify other flags like:
-```bash
+# For custom configurations, you can specify other flags like:
 cmake -DCMAKE_INSTALL_PREFIX=/path/to/install \
       -DCMAKE_CXX_STANDARD=23 \
       -DCMAKE_BUILD_TYPE=Release \
       ..
-```
+# 3. Build
+cmake --build . -- -j8
 
-### 4. Build
-```bash
-make -j$(nproc)
-```
-Or specify the number of parallel jobs:
-```bash
-make -j8
-```
-
-### 5. Install
-```bash
-make install
+# 4. Install
+cmake --install .
 ```
 
 This will install:

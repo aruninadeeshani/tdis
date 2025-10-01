@@ -156,13 +156,13 @@ Event 2
         # Check summary structure
         self.assertEqual(len(summary), 3)  # 3 tracks
         self.assertIn('n_hits', summary.columns)
-        self.assertIn('momentum', summary.columns)
+        self.assertIn('momentum_first', summary.columns)
         self.assertIn('n_rings', summary.columns)
 
         # Check values for track 1 (which has 3 hits)
         track1_summary = summary.loc[1]
         self.assertEqual(track1_summary['n_hits'], 3)
-        self.assertAlmostEqual(track1_summary['momentum'], 0.5123)
+        self.assertAlmostEqual(track1_summary['momentum_first'], 0.5123)
 
     def test_empty_file(self):
         """Test reading an empty file."""

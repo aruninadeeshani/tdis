@@ -34,12 +34,9 @@
  **/
 #pragma once
 
-#include <JANA/JApplication.h>
 #include <JANA/JEvent.h>
 #include <JANA/JEventSource.h>
 #include <JANA/JEventSourceGeneratorT.h>
-#include <fmt/core.h>
-#include <spdlog/spdlog.h>
 
 #include <Acts/Definitions/Units.hpp>
 #include <algorithm>
@@ -47,13 +44,13 @@
 #include <iostream>
 #include <string>
 #include <string_view>
-#include <thread>
 #include <vector>
 
+#include "geometry/TdisGeometryHelper.hpp"
+#include "logging/LogService.hpp"
 #include "podio_model/DigitizedMtpcMcHitCollection.h"
 #include "podio_model/DigitizedMtpcMcTrackCollection.h"
 #include "podio_model/EventInfoCollection.h"
-#include "services/LogService.hpp"
 
 namespace tdis::io {
 
@@ -63,7 +60,7 @@ namespace tdis::io {
         double adc;      // - Amplitude (ADC bin of sample)
         int ring;        // - Ring (id of rin, 0 is innermost).
         int pad;         // - Pad (id of pad, 0 is at or closest to phi=0 and numbering is clockwise).
-        int plane;       // - Plane(id of z plane from 0 upstream  to 9 downstream)
+        int plane;       // - Plane(id of z plane from 0 upstream to 9 downstream)
         double zToGem;   // - ZtoGEM (m)
         double true_x;   // - True hit x info (quiet_NaN() if not provided)
         double true_y;   // - True hit y info (quiet_NaN() if not provided)
@@ -89,7 +86,7 @@ namespace tdis::io {
     public:
         DigitizedDataEventSource();
 
-        DigitizedDataEventSource(std::string resource_name, JApplication* app);
+        DigitizedDataEventSource(std::string fileName, JApplication* app);
 
         ~DigitizedDataEventSource() override = default;
 
@@ -108,7 +105,7 @@ namespace tdis::io {
         /// Do we need it at all?
         static std::string GetDescription();
 
-        Parameter<int> m_tracks_per_event{this, "io:tracks_per_event", 1, "Number of tracks to combine per event"};
+        Parameter<int> m_tracks_per_event{this, "DigitizedDataEventSource:tracks_per_event", 1, "Number of tracks to combine per event"};
         Service<services::LogService> m_log_svc{this};
     private:
 
@@ -127,14 +124,14 @@ namespace tdis::io {
         SetCallbackStyle(CallbackStyle::ExpertMode);
     }
 
-    inline DigitizedDataEventSource::DigitizedDataEventSource(std::string resource_name, JApplication* app): JEventSource(resource_name, app) {
+    inline DigitizedDataEventSource::DigitizedDataEventSource(std::string fileName, JApplication* app): JEventSource(fileName, app) {
         SetTypeName(NAME_OF_THIS);  // Provide JANA with class name
         SetCallbackStyle(CallbackStyle::ExpertMode);
     }
 
     inline void DigitizedDataEventSource::Init() {
         auto app = GetApplication();
-        m_log = m_log_svc->logger("io");
+        m_log = m_log_svc->logger("DigitizedDataEventSource");
         m_log->info("Our log level is: ", services::LogLevelToString(m_log->level()));
         m_log->info("Number tracks per event is: {}", m_tracks_per_event());
     }
@@ -280,7 +277,7 @@ namespace tdis::io {
         // Calls to GetEvent are synchronized with each other, which means they can
         // read and write state on the JEventSource without causing race conditions.
 
-        static size_t current_event_number = 1;
+        static size_t current_event_number = 0;
         event.SetEventNumber(current_event_number++);
         event.SetRunNumber(22);
 
@@ -359,6 +356,13 @@ namespace tdis::io {
         podioTrack.setMomentum(track.momentum * Acts::UnitConstants::GeV);
         for(auto& hit: track.hits) {
 
+            if (hit.ring == -999 || hit.ring == 999 || hit.pad == -999 || hit.pad == 999) {
+                m_log->warn("hit ring={} pad={} plane={} at m_event_line_index={} at event={}. "
+                            "(!) Hit will be skipped and will not appear in any further processing",
+                            hit.ring, hit.pad, hit.plane, m_event_line_index, event.GetEventNumber());
+                continue;
+            }
+
             auto podioHit = podioHits.create();
             podioHit.setTime(   hit.time * Acts::UnitConstants::ns  );
             podioHit.setAdc(    hit.adc   );
@@ -366,6 +370,11 @@ namespace tdis::io {
             podioHit.setPad(    hit.pad   );
             podioHit.setPlane(  hit.plane );
             podioHit.setZToGem( hit.zToGem  * Acts::UnitConstants::m);
+
+            // Calculate
+            auto [padX, padY] = getPadCenter(hit.ring, hit.pad);
+            podioHit.setPadCenterX(padX);
+            podioHit.setPadCenterY(padY);
 
             tdis::Vector3f true_pos = tdis::Vector3f{
                 static_cast<float>(hit.true_x * Acts::UnitConstants::m),

@@ -17,8 +17,8 @@
 #include <ActsExamples/EventData/Measurement.hpp>
 #include <ActsExamples/EventData/Track.hpp>
 
-#include "ActsGeometryService.h"
-#include "TrackingTypes.h"
+#include "geometry/ActsGeometryService.h"
+#include "logging/LogService.hpp"
 #include "podio_model/DigitizedMtpcMcHitCollection.h"
 #include "podio_model/DigitizedMtpcMcTrack.h"
 #include "podio_model/DigitizedMtpcMcTrackCollection.h"
@@ -31,7 +31,6 @@
 #include "podio_model/TrackerHitCollection.h"
 #include "podio_model/Trajectory.h"
 #include "podio_model/TrajectoryCollection.h"
-#include "services/LogService.hpp"
 
 namespace tdis::tracking {
 

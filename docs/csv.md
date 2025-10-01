@@ -1,180 +1,280 @@
 # CSV Data Format
 
-The TDIS tracking system exports tracking data to CSV format for analysis and debugging purposes.
+The TDIS tracking system exports comprehensive tracking data to CSV format for analysis, debugging, and performance evaluation.
 
 ## Overview
 
 - CSV files are generated with configurable prefix via `csv:prefix` parameter (default: "output")
-- Two CSV files are created per run:
-  - `{prefix}.in_tracks.csv` - Track seed and Monte Carlo track information
-  - `{prefix}.in_hits.csv` - Hit measurements and detailed hit information
+- Five interconnected CSV files are created per run:
+  - `{prefix}.seeds.csv` - Track seeds with Monte Carlo truth and initial parameters
+  - `{prefix}.hits.csv` - Hit measurements and detailed hit information
+  - `{prefix}.fitted_tracks.csv` - Fitted track results after Kalman filtering
+  - `{prefix}.track_states.csv` - Detailed track states along trajectories
+  - `{prefix}.comparison.csv` - Performance comparison between truth and fitted values
 - Column names are provided in the first line (header row) of each CSV file
 - All numeric values use standard scientific notation where appropriate
+- Files are linked through common ID fields enabling full traceability
 
-## File Structure
+## ID Linkage Strategy
 
-The CSV files contain related tracking information with relational links:
+The CSV files form a relational structure with full traceability from MC truth through reconstruction:
 
 ```mermaid
 erDiagram
+    Events ||--o{ Track_Seeds : contains
+    Track_Seeds ||--o{ Hit_Measurements : has
+    Track_Seeds ||--o| Fitted_Tracks : produces
+    Fitted_Tracks ||--o{ Track_States : contains
+    Track_Seeds ||--o| Comparison : evaluated_in
+    
     Track_Seeds {
         int evt PK "Event Number"
-        int trk_id PK "Track Index"
+        int seed_id PK "Seed Index"
         float mc_mom "MC Momentum"
-        float mc_phi "MC Phi"
-        float perigee_x "Perigee X"
-        float etc "Track parameters"
+        float init_params "Initial Parameters"
+        float perigee "Perigee Point"
     }
+    
     Hit_Measurements {
         int evt FK "Event Number"
-        int trk_id FK "Track Index"
-        int hit_id PK "Hit Index"
-        float meas_time "Measurement Time"
-        float hit_x "Hit Position X"
-        float etc "Hit data"
+        int seed_id FK "Seed Index"
+        int meas_id PK "Measurement Index"
+        float meas_data "Measurement Data"
+        float mc_hit_data "MC Hit Truth"
     }
-
-    Track_Seeds ||--o{ Hit_Measurements : "has"
+    
+    Fitted_Tracks {
+        int evt FK "Event Number"
+        int track_id PK "Track Index"
+        int seed_id FK "Original Seed"
+        float fit_momentum "Fitted Momentum"
+        float chi2_ndf "Fit Quality"
+    }
+    
+    Track_States {
+        int evt FK "Event Number"
+        int track_id FK "Track Index"
+        int seed_id FK "Seed Index"
+        int state_idx PK "State Index"
+        float state_params "State Parameters"
+    }
+    
+    Comparison {
+        int evt FK "Event Number"
+        int seed_id FK "Seed Index"
+        float mc_values "MC Truth"
+        float fit_values "Fitted Results"
+        float deltas "Residuals"
+    }
 ```
 
 ## Table Definitions
 
-### in_tracks.csv
+### seeds.csv
 
-Contains track seed information with associated Monte Carlo truth data and track parameters.
+Contains track seed information with Monte Carlo truth data and initial track parameters.
 
-**Primary Key:** Composite key of (`evt`, `trk_id`)
+**Primary Key:** Composite key of (`evt`, `seed_id`)
 
-| Column Index | Column Name | Type | Description |
-|-------------|-------------|------|-------------|
+| Column | Name | Type | Description |
+|--------|------|------|-------------|
 | 0 | `evt` | uint64 | Event number/index |
-| 1 | `trk_id` | int | Track seed index within event |
+| 1 | `seed_id` | int | Track seed index within event |
 | 2 | `mc_mom` | float | MC track total momentum [GeV/c] |
-| 3 | `mc_phi` | float | MC track phi angle at start [rad] |
-| 4 | `mc_theta` | float | MC track theta angle at start [rad] |
-| 5 | `mc_vtx_z` | float | MC track exact Z vertex position [mm] |
-| 6 | `mc_hits_count` | int | Number of MC hits for this track |
+| 3 | `mc_phi` | float | MC track phi angle [rad] |
+| 4 | `mc_theta` | float | MC track theta angle [rad] |
+| 5 | `mc_vtx_z` | float | MC track Z vertex [mm] |
+| 6 | `mc_hits_count` | int | Number of MC hits |
 | 7 | `pdg` | int | Particle PDG code |
-| 8 | `tp_phi` | float | Track parameters phi [rad] |
-| 9 | `tp_theta` | float | Track parameters theta [rad] |
-| 10 | `tp_time` | float | Track time [ns] |
-| 11 | `qoverp` | float | Charge over momentum [c/GeV] |
-| 12 | `surface` | uint64 | Surface geometry ID |
-| 13 | `loc0` | float | Local position on surface coordinate 0 [mm] |
-| 14 | `loc1` | float | Local position on surface coordinate 1 [mm] |
-| 15 | `cov_loc0` | float | Covariance matrix element for loc0 [mm²] |
-| 16 | `cov_loc1` | float | Covariance matrix element for loc1 [mm²] |
-| 17 | `cov_phi` | float | Covariance matrix element for phi [rad²] |
-| 18 | `cov_theta` | float | Covariance matrix element for theta [rad²] |
-| 19 | `cov_qoverp` | float | Covariance matrix element for q/p [(c/GeV)²] |
-| 20 | `cov_time` | float | Covariance matrix element for time [ns²] |
-| 21 | `perigee_x` | float | Perigee point X coordinate [mm] |
-| 22 | `perigee_y` | float | Perigee point Y coordinate [mm] |
-| 23 | `perigee_z` | float | Perigee point Z coordinate [mm] |
-| 24 | `fhit_id` | int | First hit index (optional) |
-| 25 | `fhit_time` | float | First hit time [ns] (optional) |
-| 26 | `fhit_plane` | int | First hit plane number (optional) |
-| 27 | `fhit_ring` | int | First hit ring number (optional) |
-| 28 | `fhit_pad` | int | First hit pad number (optional) |
-| 29 | `fhit_ztogem` | float | First hit Z distance to GEM [mm] (optional) |
-| 30 | `fhit_true_x` | float | First hit true X position [mm] (optional) |
-| 31 | `fhit_true_y` | float | First hit true Y position [mm] (optional) |
-| 32 | `fhit_true_z` | float | First hit true Z position [mm] (optional) |
+| 8 | `init_phi` | float | Initial parameters phi [rad] |
+| 9 | `init_theta` | float | Initial parameters theta [rad] |
+| 10 | `init_time` | float | Initial track time [ns] |
+| 11 | `init_qoverp` | float | Initial charge/momentum [c/GeV] |
+| 12 | `init_surface` | uint64 | Initial surface geometry ID |
+| 13 | `init_loc0` | float | Initial local position 0 [mm] |
+| 14 | `init_loc1` | float | Initial local position 1 [mm] |
+| 15-20 | `cov_*` | float | Covariance matrix diagonal elements |
+| 21-23 | `perigee_*` | float | Perigee point coordinates [mm] |
+| 24-32 | `fhit_*` | various | First hit information (optional) |
 
-**Note:** Columns 24-32 are empty if the track has no hits.
+### hits.csv
 
-### in_hits.csv
+Contains measurement and hit information for each track seed.
 
-Contains detailed hit and measurement information for each track.
+**Primary Key:** Composite key of (`evt`, `seed_id`, `meas_id`)
 
-**Primary Key:** Composite key of (`evt`, `trk_id`, hit sequence)
+| Column | Name | Type | Description |
+|--------|------|------|-------------|
+| 0 | `evt` | uint64 | Event number |
+| 1 | `seed_id` | int | Track seed index (FK to seeds) |
+| 2 | `meas_id` | int | Measurement index within track |
+| 3 | `meas_time` | float | Measurement time [ns] |
+| 4 | `meas_surface` | uint64 | Surface geometry ID |
+| 5-6 | `meas_loc*` | float | Local position [mm] |
+| 7-9 | `meas_cov*` | float | Measurement covariances |
+| 10-16 | `hit_*` | various | Reconstructed hit data |
+| 17-26 | `mc_hit_*` | various | MC truth hit data |
 
-| Column Index | Column Name | Type | Description |
-|-------------|-------------|------|-------------|
-| 0 | `evt` | uint64 | Event number/index |
-| 1 | `trk_id` | int | Track seed index (foreign key to in_tracks) |
-| 2 | `meas_time` | float | Measurement time [ns] |
-| 3 | `meas_surface` | uint64 | Measurement surface geometry ID |
-| 4 | `meas_loc0` | float | Measurement local position coordinate 0 [mm] |
-| 5 | `meas_loc1` | float | Measurement local position coordinate 1 [mm] |
-| 6 | `meas_cov0` | float | Measurement covariance for loc0 [mm²] |
-| 7 | `meas_cov1` | float | Measurement covariance for loc1 [mm²] |
-| 8 | `meas_cov_time` | float | Measurement covariance for time [ns²] |
-| 9 | `hit_id` | int | Tracker hit unique ID |
-| 10 | `hit_cell_id` | uint32 | Tracker hit cell identifier |
-| 11 | `hit_x` | float | Tracker hit global X position [mm] |
-| 12 | `hit_y` | float | Tracker hit global Y position [mm] |
-| 13 | `hit_z` | float | Tracker hit global Z position [mm] |
-| 14 | `hit_time` | float | Tracker hit time [ns] |
-| 15 | `hit_adc` | float | Tracker hit ADC value (energy deposit) |
-| 16 | `mc_hit_id` | int | MC hit unique ID |
-| 17 | `mc_hit_plane` | int | MC hit plane number |
-| 18 | `mc_hit_ring` | int | MC hit ring number |
-| 19 | `mc_hit_pad` | int | MC hit pad number |
-| 20 | `mc_hit_time` | float | MC hit time [ns] |
-| 21 | `mc_hit_adc` | float | MC hit ADC value |
-| 22 | `mc_hit_ztogem` | float | MC hit Z distance to GEM [mm] |
-| 23 | `mc_hit_true_x` | float | MC hit true X position [mm] |
-| 24 | `mc_hit_true_y` | float | MC hit true Y position [mm] |
-| 25 | `mc_hit_true_z` | float | MC hit true Z position [mm] |
+### fitted_tracks.csv
 
-## Cell ID Encoding
+Contains fitted track results from Kalman filtering.
 
-The `hit_cell_id` field encodes the detector geometry location as:
-```
-cell_id = 1000000 * plane + 1000 * ring + pad
-```
+**Primary Key:** Composite key of (`evt`, `track_id`)  
+**Foreign Key:** `seed_id` links to original seed
+
+| Column | Name | Type | Description |
+|--------|------|------|-------------|
+| 0 | `evt` | uint64 | Event number |
+| 1 | `track_id` | int | Fitted track unique ID |
+| 2 | `seed_id` | int | Original seed ID (FK) |
+| 3 | `fit_type` | int | Track type/quality flag |
+| 4-6 | `fit_p*` | float | Fitted momentum components [GeV/c] |
+| 7 | `fit_p` | float | Total fitted momentum [GeV/c] |
+| 8 | `fit_theta` | float | Fitted theta angle [rad] |
+| 9 | `fit_phi` | float | Fitted phi angle [rad] |
+| 10-12 | `fit_vtx_*` | float | Fitted vertex position [mm] |
+| 13 | `fit_time` | float | Fitted time [ns] |
+| 14 | `fit_time_err` | float | Time uncertainty [ns] |
+| 15 | `fit_charge` | float | Particle charge [e] |
+| 16 | `fit_chi2` | float | Total chi-squared |
+| 17 | `fit_ndf` | int | Degrees of freedom |
+| 18 | `fit_chi2ndf` | float | Reduced chi-squared |
+| 19 | `fit_pdg` | int | PDG hypothesis |
+| 20 | `n_states` | int | Number of track states |
+| 21 | `n_measurements` | int | Used measurements |
+| 22 | `n_outliers` | int | Outlier count |
+| 23 | `n_holes` | int | Missing hit count |
+
+### track_states.csv
+
+Contains track parameters at each surface along the trajectory.
+
+**Primary Key:** Composite key of (`evt`, `track_id`, `state_idx`)
+
+| Column | Name | Type | Description |
+|--------|------|------|-------------|
+| 0 | `evt` | uint64 | Event number |
+| 1 | `track_id` | int | Track ID (FK) |
+| 2 | `seed_id` | int | Original seed ID (FK) |
+| 3 | `state_idx` | int | State index along track |
+| 4 | `surface_id` | uint64 | Surface geometry ID |
+| 5-6 | `loc*` | float | Local position [mm] |
+| 7 | `phi` | float | Phi angle [rad] |
+| 8 | `theta` | float | Theta angle [rad] |
+| 9 | `qoverp` | float | Charge/momentum [c/GeV] |
+| 10 | `p` | float | Momentum magnitude [GeV/c] |
+| 11 | `time` | float | Time [ns] |
+| 12 | `path_length` | float | Path from origin [mm] |
+| 13 | `chi2` | float | State chi-squared |
+| 14 | `type` | string | State type (measurement/outlier/hole) |
+
+### comparison.csv
+
+Side-by-side comparison of MC truth, initial, and fitted parameters.
+
+**Primary Key:** Composite key of (`evt`, `seed_id`)
+
+| Column | Name | Type | Description |
+|--------|------|------|-------------|
+| 0 | `evt` | uint64 | Event number |
+| 1 | `seed_id` | int | Seed ID (FK) |
+| 2-5 | `mc_*` | float | MC truth values |
+| 6-8 | `init_*` | float | Initial seed parameters |
+| 9-12 | `fit_*` | float | Fitted parameters |
+| 13 | `fit_chi2ndf` | float | Fit quality |
+| 14 | `delta_p` | float | Momentum residual [GeV/c] |
+| 15 | `delta_p_rel` | float | Relative momentum residual |
+| 16 | `delta_theta` | float | Theta residual [rad] |
+| 17 | `delta_phi` | float | Phi residual [rad] |
+| 18 | `delta_vtx_z` | float | Vertex Z residual [mm] |
+| 19 | `fit_success` | int | Fit success flag (1/0) |
 
 ## Usage Examples
 
-### Python/Pandas
-
-Reading the CSV files with pandas:
+### Python/Pandas Analysis
 
 ```python
 import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
 
-# Read track data
-tracks_df = pd.read_csv('output.in_tracks.csv')
+# Load all CSV files
+seeds_df = pd.read_csv('output.seeds.csv')
+hits_df = pd.read_csv('output.hits.csv')
+tracks_df = pd.read_csv('output.fitted_tracks.csv')
+states_df = pd.read_csv('output.track_states.csv')
+comp_df = pd.read_csv('output.comparison.csv')
 
-# Read hit data
-hits_df = pd.read_csv('output.in_hits.csv')
+# Example 1: Track reconstruction efficiency
+total_seeds = len(seeds_df)
+fitted_tracks = len(tracks_df)
+efficiency = fitted_tracks / total_seeds * 100
+print(f"Tracking efficiency: {efficiency:.1f}%")
 
-# Join tracks with their hits
-tracks_with_hits = pd.merge(
-    tracks_df, 
-    hits_df, 
-    on=['evt', 'trk_id'],
-    how='left'
-)
+# Example 2: Momentum resolution study
+comp_df['p_resolution'] = comp_df['delta_p_rel'] * 100  # Convert to percentage
+plt.hist(comp_df['p_resolution'], bins=50, range=(-10, 10))
+plt.xlabel('Momentum Resolution (%)')
+plt.ylabel('Tracks')
+plt.title(f'Momentum Resolution (RMS: {comp_df["p_resolution"].std():.2f}%)')
 
-# Filter tracks by momentum
-high_p_tracks = tracks_df[tracks_df['mc_mom'] > 1.0]  # > 1 GeV/c
+# Example 3: Chi2/ndf distribution for quality assessment
+quality_tracks = tracks_df[tracks_df['fit_chi2ndf'] > 0]
+plt.hist(quality_tracks['fit_chi2ndf'], bins=50, range=(0, 10))
+plt.xlabel('χ²/ndf')
+plt.ylabel('Tracks')
+plt.axvline(x=1, color='r', linestyle='--', label='Expected')
+
+# Example 4: Residuals per layer
+residuals_by_layer = states_df.groupby('surface_id').agg({
+    'chi2': 'mean',
+    'state_idx': 'count'
+})
+print("Average chi2 per detector layer:")
+print(residuals_by_layer)
+
+# Example 5: Track parameter pulls
+# Join seeds with comparison to get covariances
+pulls_df = pd.merge(seeds_df, comp_df, on=['evt', 'seed_id'])
+pulls_df['pull_theta'] = pulls_df['delta_theta'] / np.sqrt(pulls_df['cov_theta'])
+pulls_df['pull_phi'] = pulls_df['delta_phi'] / np.sqrt(pulls_df['cov_phi'])
+
+# Example 6: Outlier analysis
+outlier_tracks = tracks_df[tracks_df['n_outliers'] > 0]
+print(f"Tracks with outliers: {len(outlier_tracks)} / {len(tracks_df)}")
 ```
 
-### Data Analysis
 
-Common analysis tasks:
+## Performance Metrics
 
-1. **Track efficiency**: Compare number of reconstructed hits (`mc_hits_count`) with actual measurements
-2. **Resolution studies**: Compare MC truth positions (`mc_hit_true_*`) with reconstructed positions (`hit_*`)
-3. **Momentum analysis**: Study track parameter covariances vs. MC momentum
-4. **Geometry validation**: Verify hit distributions across planes, rings, and pads
+Common analysis metrics extractable from the CSV data:
+
+1. **Tracking Efficiency**: `fitted_tracks / total_seeds`
+2. **Momentum Resolution**: Statistics of `delta_p_rel` in comparison.csv
+3. **Angular Resolution**: Statistics of `delta_theta`, `delta_phi`
+4. **Track Quality**: Distribution of `fit_chi2ndf`
+5. **Hit Efficiency**: `n_measurements / mc_hits_count`
+6. **Outlier Rate**: `n_outliers / (n_measurements + n_outliers)`
+7. **Vertex Resolution**: Statistics of `delta_vtx_z`
 
 ## Units
 
 All units follow the Acts framework conventions:
 
 - **Length**: millimeters (mm)
-- **Time**: nanoseconds (ns)  
+- **Time**: nanoseconds (ns)
 - **Momentum**: GeV/c
 - **Angles**: radians
-- **Charge**: elementary charge units
+- **Charge**: elementary charge units (e)
+- **Energy**: GeV
 
 ## Implementation
 
-The CSV writer is implemented in:
-- Source: [`source/tdis/io/CsvWriteProcessor.hpp`](https://github.com/tdis/source/tdis/io/CsvWriteProcessor.hpp)
-- Factory: [`source/tdis/tracking/TruthTracksHitsSeedsFactory.cpp`](https://github.com/tdis/source/tdis/tracking/TruthTracksHitsSeedsFactory.cpp)
+The enhanced CSV writer is implemented in:
+- Source: [`source/tdis/io/CsvWriterProcessor.hpp`](source/tdis/io/CsvWriterProcessor.hpp)
+- Track Fitting: [`source/tdis/tracking/KalmanFittingFactory.cpp`](source/tdis/tracking/KalmanFittingFactory.cpp)
 
-The writer processes `TrackSeed` objects with associated `Measurement2D` and `TrackerHit` data, extracting both reconstructed and Monte Carlo truth information.
+The writer processes:
+- Input: `TrackSeed` objects with `Measurement2D` and MC truth
+- Output: `Track`, `Trajectory`, `TrackParameters` from Kalman filter
+- Links all data through consistent ID relationships for full traceability
