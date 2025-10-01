@@ -55,7 +55,7 @@ add_executable(tdis
         io/PodioWriteProcessor.hpp
         io/CsvWriteProcessor.hpp
 
-        geometry/PadGeometryHelper.hpp
+        geometry/TdisGeometryHelper.hpp
 
         geometry/ActsGeometryService.cpp
         geometry/ActsGeometryService.h
