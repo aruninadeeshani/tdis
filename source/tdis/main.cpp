@@ -15,7 +15,7 @@
 #include "services/LogService.hpp"
 #include "tracking/ActsGeometryService.h"
 #include "tracking/KalmanFittingFactory.h"
-#include "tracking/TruthTracksHitsSeedsFactory.h"
+#include "tracking/TruthTracksSeedsHitsFactory.h"
 
 struct ProgramArguments {
     std::map<std::string, std::string> params;
@@ -111,16 +111,9 @@ int main(int argc, char* argv[]) {
     app.ProvideService(std::make_shared<tdis::services::LogService>(&app));
     app.ProvideService(std::make_shared<tdis::tracking::ActsGeometryService>());
 
-    // auto recoHitGenerator = new JOmniFactoryGeneratorT<tdis::tracking::ReconstructedHitFactory>();
-    // recoHitGenerator->AddWiring(
-    //     "TrackerHitGenerator",
-    //     {"DigitizedMtpcMcHit"},
-    //     {"TrackerHit", "Measurement2D"});
-    // app.Add(recoHitGenerator);
-
-    auto truthTrackInitGenerator = new JOmniFactoryGeneratorT<tdis::tracking::TruthTracksHitsSeedsFactory>();
+    auto truthTrackInitGenerator = new JOmniFactoryGeneratorT<tdis::tracking::TruthTracksSeedsHitsFactory>();
     truthTrackInitGenerator->AddWiring(
-        "TruthTrackParameterGenerator",
+        "TruthTracksSeedsHits",
         {"DigitizedMtpcMcTracks"},
         {
             "TruthTrackSeeds",

@@ -221,15 +221,15 @@ components:
     Members:
       - uint64_t          surface         // Surface track was propagated to (possibly multiple per detector)
       - uint32_t          system          // Detector system track was propagated to
-      - tdis::Vector3f position        // Position of the trajectory point [mm]
-      - tdis::Cov3f    positionError   // Error on the position
-      - tdis::Vector3f momentum        // 3-momentum at the point [GeV]
-      - tdis::Cov3f    momentumError   // Error on the 3-momentum
+      - tdis::Vector3f    position        // Position of the trajectory point [mm]
+      - tdis::Cov3f       positionError   // Error on the position
+      - tdis::Vector3f    momentum        // 3-momentum at the point [GeV]
+      - tdis::Cov3f       momentumError   // Error on the 3-momentum
       - float             time            // Time at this point [ns]
       - float             timeError       // Error on the time at this point
       - float             theta           // polar direction of the track at the surface [rad]
       - float             phi             // azimuthal direction of the track at the surface [rad]
-      - tdis::Cov2f    directionError  // Error on the polar and azimuthal angles
+      - tdis::Cov2f       directionError  // Error on the polar and azimuthal angles
       - float             pathlength      // Pathlength from the origin to this point
       - float             pathlengthError // Error on the pathlength
 
@@ -283,21 +283,23 @@ datatypes :
     Description: "TDIS MTPC Digitized track"
     Author: "Dmitry Romanov"
     Members:
-      - double time                       // - Time of arrival at Pad (ns)
-      - double adc                        // - Amplitude (ADC bin of sampa)
+      - double time                       // - (ns) Time of arrival at Pad
+      - double adc                        // - (ADC samples) Amplitude
       - int ring                          // - Ring (id of rin, 0 is inner most).
       - int pad                           // - Pad (id of pad, 0 is at or closest to phi=0 and numbering is clockwise).
-      - int plane                         // - Plane(id of z plane from 0 upstream  to 9 downstream)
-      - double zToGem                     // - ZtoGEM (m)
-      - tdis::Vector3f  truePosition   // - True hit x,y,z info (quiet_NaN() if not provided)
+      - int plane                         // - Plane (id of z plane from 0 upstream  to 9 downstream)
+      - double zToGem                     // - (m) ZtoGEM
+      - double padCenterX                 // - (m) X coordinate of pad center
+      - double padCenterY                 // - (m) Y coordinate of pad center
+      - tdis::Vector3f  truePosition      // - True hit x,y,z info (quiet_NaN() if not provided)
 
   tdis::TrackerHit:
     Description: "Tracker hit (reconstructed from Raw)"
     Author: "W. Armstrong, S. Joosten"
     Members:
       - uint64_t           cellID            // The detector specific (geometrical) cell id.
-      - tdis::Vector3f  position          // Hit (cell) position [mm]
-      - tdis::CovDiag3f positionError     // Covariance Matrix
+      - tdis::Vector3f     position          // Hit (cell) position [mm]
+      - tdis::CovDiag3f    positionError     // Covariance Matrix
       - float              time              // Hit time [ns]
       - float              timeError         // Error on the time
       - float              edep              // Energy deposit in this hit [GeV]
@@ -310,9 +312,9 @@ datatypes :
     Author: "W. Deconinck"
     Members:
       - uint64_t          surface           // Surface for bound coordinates (geometryID)
-      - tdis::Vector2f loc               // 2D location on surface
+      - tdis::Vector2f    loc               // 2D location on surface
       - float             time              // Measurement time
-      - tdis::Cov3f    covariance           // Covariance on location and time
+      - tdis::Cov3f       covariance        // Covariance on location and time
     VectorMembers:
       - float             weights           // Weight for each of the hits, mirrors hits array
     OneToManyRelations:
@@ -322,10 +324,10 @@ datatypes :
     Description: "Seed info from the realistic seed finder"
     Author: "S. Li, B. Schmookler, J. Osborn"
     Members:
-      - tdis::Vector3f      perigee   // Vector for the perigee (line surface)
+      - tdis::Vector3f         perigee         // Vector for the perigee (line surface)
     OneToManyRelations:
-      - tdis::TrackerHit       hits      // Tracker hits triplet for seeding
-      - tdis::Measurement2D    measurements // Tracker measurements associated with hits
+      - tdis::TrackerHit       hits            // Tracker hits triplet for seeding
+      - tdis::Measurement2D    measurements    // Tracker measurements associated with hits
     OneToOneRelations:
       - tdis::TrackParameters  initParams      // Initial track parameters
       - tdis::DigitizedMtpcMcTrack mcTrack     // True MC track
@@ -370,9 +372,9 @@ datatypes :
     Author: "S. Joosten, J. Osborn"
     Members:
       - int32_t            type                           // Flag that defines the type of track
-      - tdis::Vector3f  position                       // Track 3-position at the vertex
-      - tdis::Vector3f  momentum                       // Track 3-momentum at the vertex [GeV]
-      - tdis::Cov6f     positionMomentumCovariance     // Covariance matrix in basis [x,y,z,px,py,pz]
+      - tdis::Vector3f  position                          // Track 3-position at the vertex
+      - tdis::Vector3f  momentum                          // Track 3-momentum at the vertex [GeV]
+      - tdis::Cov6f     positionMomentumCovariance        // Covariance matrix in basis [x,y,z,px,py,pz]
       - float              time                           // Track time at the vertex [ns]
       - float              timeError                      // Error on the track vertex time
       - float              charge                         // Particle charge

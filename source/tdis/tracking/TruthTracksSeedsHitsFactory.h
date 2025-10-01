@@ -16,7 +16,7 @@
 
 namespace tdis::tracking {
 
-    struct TruthTracksHitsSeedsFactory : public JOmniFactory<TruthTracksHitsSeedsFactory> {
+    struct TruthTracksSeedsHitsFactory : public JOmniFactory<TruthTracksSeedsHitsFactory> {
         // Input
         PodioInput<tdis::DigitizedMtpcMcTrack> m_in_mcTracks {this, {"DigitizedMtpcMcTracks"}};
 

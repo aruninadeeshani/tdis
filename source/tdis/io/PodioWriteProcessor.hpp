@@ -69,7 +69,7 @@ class PodioWriteProcessor : public JEventProcessor {
 
 public:
     // Get the list of output collections to include/exclude
-    std::vector<std::string> output_collections = {
+    std::set<std::string> m_output_collections = {
         // Header and other metadata
         "EventInfo",
 
@@ -82,7 +82,9 @@ public:
         "TrackerHits",
         "Measurements2D",
 
-        "FittedTrajectories", "FittedTrackParameters", "FittedTracks"
+        "FittedTrajectories",
+        "FittedTrackParameters",
+        "FittedTracks"
     };
 
   PodioWriteProcessor(JApplication * app);
@@ -100,7 +102,6 @@ public:
   std::shared_ptr<spdlog::logger> m_log;
   std::string m_output_file = "podio_output.root";
 
-  std::set<std::string> m_output_collections;  // config. parameter
   std::vector<std::string> m_collections_to_write;  // derived from above config. parameters
   std::vector<std::string> m_collections_to_print;
   JApplication * m_app;
@@ -115,7 +116,7 @@ inline PodioWriteProcessor::PodioWriteProcessor(JApplication* app) {
 
 inline void PodioWriteProcessor::Init() {
     auto* app = m_app;
-    m_log = app->GetService<tdis::services::LogService>()->logger("PodioWriteProcessor");
+    m_log = app->GetService<tdis::services::LogService>()->logger("podio");
 
     m_app->SetDefaultParameter("podio:output_file", m_output_file, "Podio output file to write to");
 
@@ -128,17 +129,7 @@ inline void PodioWriteProcessor::Init() {
         }
     }
 
-    m_app->SetDefaultParameter(
-        "podio:output_collections", output_collections,
-        "Comma separated list of collection names to write out. If not set, all collections will "
-        "be written (including ones from input file). Don't set this and use "
-        "PODIO:OUTPUT_EXCLUDE_COLLECTIONS to write everything except a selection.");
-
-    m_output_collections
-        = std::set<std::string>(output_collections.begin(), output_collections.end());
-
-    m_app->SetDefaultParameter(
-        "podio:print_collections", m_collections_to_print,
+    m_app->SetDefaultParameter("podio:print_collections", m_collections_to_print,
         "Comma separated list of collection names to print to screen, e.g. for debugging.");
 
     m_writer = std::make_unique<podio::ROOTWriter>(m_output_file);

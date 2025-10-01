@@ -36,7 +36,6 @@ find_package(podio REQUIRED)
 # PODIO_GENERATE_DATAMODEL(podio_model "layout.yaml" DATAMODEL_HEADERS DATAMODEL_SOURCES OUTPUT_FOLDER "")
 
 PODIO_GENERATE_DATAMODEL(podio_model "edm.yaml" DATAMODEL_HEADERS DATAMODEL_SOURCES
-        UPSTREAM_EDM acts:${CMAKE_CURRENT_SOURCE_DIR}/acts_edm.yml
         OUTPUT_FOLDER "${CMAKE_CURRENT_SOURCE_DIR}/podio_model"
 )
 
@@ -66,8 +65,8 @@ add_executable(tdis
         tracking/MtpcDetectorElement.cpp
         tracking/MtpcDetectorElement.hpp
 
-        tracking/TruthTracksHitsSeedsFactory.h
-        tracking/TruthTracksHitsSeedsFactory.cpp
+        tracking/TruthTracksSeedsHitsFactory.h
+        tracking/TruthTracksSeedsHitsFactory.cpp
 
         tracking/KalmanFittingFactory.h
         tracking/KalmanFittingFactory.cpp
