@@ -15,6 +15,7 @@ from hist import Hist
 from hist.axis import Regular
 import warnings
 
+
 # Suppress matplotlib warnings
 warnings.filterwarnings('ignore', category=UserWarning)
 
